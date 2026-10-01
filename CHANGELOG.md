@@ -7,8 +7,19 @@ All notable changes to this project are documented here. The format follows
 
 ### Added
 
+- Base image catalog (`wimi catalog add | crawl | list | remove`): record the layer digests of the base images you
+  use, then any scan identifies its base automatically and exactly, with no `--base` and no Dockerfile needed. The
+  whole base chain is found even if `--base` names only part of it, so an unnamed base is never counted as the
+  application team's work.
+- "Outdated base image" finding when the catalog knows newer releases of the base an image was built on.
+- Warning when the application layers look like they contain another, unidentified base image.
 - "Layer cake" view in the HTML report: the image drawn as stacked slices, bottom-up in build order, coloured by
   who added each layer, sized by layer size, with the end of the base image marked. Each slice links to its build step.
+
+### Changed
+
+- README and help show the published container image and generic registry examples. Harbor is one optional integration,
+  not a requirement.
 
 ## [0.1.0] - 2026-10-01
 

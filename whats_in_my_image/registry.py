@@ -286,6 +286,18 @@ class RegistryClient:
 
     # ---- API
 
+    def list_tags(self, limit: int = 10000) -> list[str]:
+        """All tags in the repository, following the registry's pagination links."""
+        tags: list[str] = []
+        url = self._url("tags/list?n=1000")
+        while url and len(tags) < limit:
+            with self._open(url) as r:
+                tags += json.load(r).get("tags") or []
+                link = r.headers.get("Link", "")
+            m = re.search(r"<([^>]+)>", link)
+            url = urllib.parse.urljoin(url, m.group(1)) if m else ""
+        return tags[:limit]
+
     def get_manifest(self, reference: str) -> tuple[dict, str, str]:
         with self._open(self._url(f"manifests/{reference}"), accept=MANIFEST_ACCEPT) as r:
             body = r.read()

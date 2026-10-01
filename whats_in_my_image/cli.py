@@ -14,23 +14,31 @@ from pathlib import Path
 from . import __version__, html_report, report
 from . import vulns as vulnmod
 from .analyze import Analyzer, base_label, compute_origins
+from .catalog import Catalog, default_path, pick_tags
+from .registry import RegistryClient, RegistryError, parse_ref
 from .sources import SourceError, load_image
 from .walker import Walker
 
 EPILOG = textwrap.dedent("""\
     image sources:
-      harbor.example.mil/project/app:1.2       pull from any registry (Harbor, Iron Bank, Docker Hub ...)
+      registry.example.mil/project/app:1.2       pull from any OCI registry (Iron Bank, Artifactory, GitLab ...)
       docker-archive:app.tar  /  app.tar       a `docker save` / `podman save` archive
       oci:./layout-dir  /  oci-archive:x.tar   an OCI image layout
       docker:app:1.2  /  podman:app:1.2        export from the local container engine
 
     examples:
-      wimi harbor.example.mil/team/api:2.4 \\
+      wimi registry.example.mil/team/api:2.4 \\
            --base registry1.dso.mil/ironbank/redhat/ubi/ubi9:9.4
-      wimi harbor.example.mil/team/api:2.4 \\
+      wimi registry.example.mil/team/api:2.4 \\
            --base "Iron Bank Python=registry1.dso.mil/ironbank/opensource/python:3.11" \\
            --base registry1.dso.mil/ironbank/redhat/ubi/ubi9:9.4 --scan
       wimi api.tar --base ubi9.tar --vuln-report trivy.json --app-name "Payments team build"
+
+    identify bases automatically (no --base needed once the catalog knows them):
+      wimi catalog crawl registry1.dso.mil/ironbank/redhat/ubi/ubi9 --limit 20
+      wimi catalog add "Iron Bank Python 3.11=registry1.dso.mil/ironbank/opensource/python:3.11"
+      wimi registry.example.mil/team/api:2.4
+      run `wimi catalog --help` for more.
 
     credentials are read from `docker login` / `podman login`, or WIMI_USERNAME / WIMI_PASSWORD.
 """)
@@ -60,6 +68,13 @@ def _parser() -> argparse.ArgumentParser:
     p.add_argument(
         "--no-auto-base", action="store_true", help="do not try the base image recorded in the image's own annotations"
     )
+    p.add_argument(
+        "--catalog",
+        type=Path,
+        default=None,
+        help=f"base image catalog used to identify bases automatically (default: {default_path()})",
+    )
+    p.add_argument("--no-catalog", action="store_true", help="do not consult the base image catalog")
     g = p.add_argument_group("vulnerabilities (optional)")
     g.add_argument(
         "--scan",
@@ -90,11 +105,17 @@ def _parser() -> argparse.ArgumentParser:
         help="line shown above the report heading, e.g. 'Prepared for CISO review'",
     )
     g.add_argument("-q", "--quiet", action="store_true", help="only print the final summary")
+    _add_registry_args(p)
+    p.add_argument("--version", action="version", version=f"%(prog)s {__version__}")
+    return p
+
+
+def _add_registry_args(p: argparse.ArgumentParser) -> None:
     g = p.add_argument_group("registry access")
     g.add_argument("--platform", default="linux/amd64", help="platform for multi-arch images (default: %(default)s)")
     g.add_argument("--username", default=os.environ.get("WIMI_USERNAME"))
     g.add_argument("--password-stdin", action="store_true", help="read the registry password from stdin")
-    g.add_argument("--insecure", action="store_true", help="skip TLS verification (self-signed Harbor)")
+    g.add_argument("--insecure", action="store_true", help="skip TLS verification (self-signed registry certificates)")
     g.add_argument("--ca-cert", help="CA bundle for registries using an internal certificate authority (e.g. DoD PKI)")
     g.add_argument("--plain-http", action="store_true", help="use http:// instead of https://")
     g.add_argument(
@@ -102,8 +123,25 @@ def _parser() -> argparse.ArgumentParser:
         type=Path,
         default=Path(os.environ.get("WIMI_CACHE", Path.home() / ".cache" / "whats-in-my-image")),
     )
-    p.add_argument("--version", action="version", version=f"%(prog)s {__version__}")
-    return p
+
+
+def _registry_opts(args) -> dict:
+    password = os.environ.get("WIMI_PASSWORD")
+    if args.password_stdin:
+        password = sys.stdin.readline().rstrip("\n")
+    return dict(
+        username=args.username,
+        password=password,
+        insecure=args.insecure,
+        ca_cert=args.ca_cert,
+        plain_http=args.plain_http,
+    )
+
+
+def _split_spec(spec: str) -> tuple[str, str]:
+    """``NAME=IMAGE`` or ``IMAGE`` -> (name, image). Image references never contain '='."""
+    name, sep, ref = spec.partition("=")
+    return (name.strip(), ref.strip()) if sep and ref else ("", spec.strip())
 
 
 def _safe_name(name: str) -> str:
@@ -113,21 +151,14 @@ def _safe_name(name: str) -> str:
 
 def main(argv: list[str] | None = None) -> int:
     argv = list(sys.argv[1:] if argv is None else argv)
+    if argv and argv[0] == "catalog":
+        return catalog_main(argv[1:])
     if argv and argv[0] == "scan":
         argv = argv[1:]
     args = _parser().parse_args(argv)
     log = (lambda *a, **k: None) if args.quiet else (lambda msg: print(msg, file=sys.stderr, flush=True))
 
-    password = os.environ.get("WIMI_PASSWORD")
-    if args.password_stdin:
-        password = sys.stdin.readline().rstrip("\n")
-    target_opts = dict(
-        username=args.username,
-        password=password,
-        insecure=args.insecure,
-        ca_cert=args.ca_cert,
-        plain_http=args.plain_http,
-    )
+    target_opts = _registry_opts(args)
     common = dict(platform=args.platform, cache_dir=args.cache_dir, log=log)
 
     try:
@@ -138,10 +169,7 @@ def main(argv: list[str] | None = None) -> int:
     target_registry = image.registry_client.ref.registry if image.registry_client else None
 
     # ---- base images: only their configs (layer digests) are needed, not their content
-    base_specs = []
-    for spec in args.base:
-        name, sep, ref = spec.partition("=")
-        base_specs.append((name.strip(), ref.strip()) if sep and ref else ("", spec))
+    base_specs = [_split_spec(spec) for spec in args.base]
     auto = image.annotations.get("org.opencontainers.image.base.name") or image.labels.get(
         "org.opencontainers.image.base.name"
     )
@@ -159,12 +187,54 @@ def main(argv: list[str] | None = None) -> int:
         except SourceError as e:
             print(f"warning: could not load base image {ref}: {e}", file=sys.stderr)
 
+    # The catalog finds every known base in the image's ancestry, including ones the user did not
+    # name, so an incomplete --base chain cannot silently credit a base's layers to the application.
+    stale_notes: list[str] = []
+    if not args.no_catalog:
+        try:
+            cat = Catalog.load(args.catalog)
+        except ValueError as e:
+            print(f"warning: {e}", file=sys.stderr)
+            cat = None
+        if cat and cat.entries:
+            chain, near = cat.match(image.diff_ids)
+            for e in chain + near:
+                bases.append(
+                    {
+                        "ref": e["ref"],
+                        "label": e.get("label") or base_label(e["ref"]),
+                        "diff_ids": e["diff_ids"],
+                        "source": "catalog",
+                        "also": e.get("also", []),
+                    }
+                )
+            log(f"Base image catalog: {len(cat.entries)} images, {len(chain)} matched this image")
+            # A base that has had newer releases is a common, fixable cause of "base image" vulnerabilities.
+            for e in chain:
+                newer = cat.newer_releases(e)
+                if newer:
+                    latest = newer[0]
+                    stale_notes.append(
+                        f"Outdated base image: built on {e['ref']} (released {e['created'][:10]}). The catalog "
+                        f"knows {len(newer)} newer release{'s' if len(newer) != 1 else ''} of this base; the latest "
+                        f"is {latest['ref']} (released {latest['created'][:10]}). Rebuilding on it picks up the "
+                        "vendor's fixes."
+                    )
+        elif not base_specs:
+            log(
+                "Tip: catalogue your base images (`wimi catalog crawl` / `wimi catalog add`) "
+                "to identify them automatically"
+            )
+    seen: set = set()
+    bases = [b for b in bases if not (tuple(b["diff_ids"]) in seen or seen.add(tuple(b["diff_ids"])))]
+
     # ---- walk layers, attribute, analyse
     log(f"Analysing {image.name} ({len(image.layers)} layers)")
     walker = Walker()
     walker.scan(image, log)
     history, _ = image.layer_history()
     origins, per_layer, notes = compute_origins(image.diff_ids, bases, history, image.labels, args.app_name)
+    notes += stale_notes
     analyzer = Analyzer(image, walker, origins, per_layer)
     analyzer.run()
 
@@ -215,6 +285,91 @@ def main(argv: list[str] | None = None) -> int:
 
     _print_summary(model, written)
     return 0
+
+
+def catalog_main(argv: list[str]) -> int:
+    common = argparse.ArgumentParser(add_help=False)
+    common.add_argument(
+        "--catalog", type=Path, default=None, help=f"catalog file (default: {default_path()}, or set WIMI_CATALOG)"
+    )
+    p = argparse.ArgumentParser(
+        prog="wimi catalog",
+        description="Manage the catalog of known base images. Once a base is catalogued, `wimi` recognises it in "
+        "any image by exact layer digests, without --base. The catalog stores only layer digests, so it is small "
+        "and safe to share across a team.",
+    )
+    sub = p.add_subparsers(dest="cmd", required=True, metavar="{add,crawl,list,remove}")
+    a = sub.add_parser("add", parents=[common], help="add one or more base images")
+    a.add_argument("images", nargs="+", metavar="[NAME=]IMAGE", help="registry reference, archive or OCI layout")
+    _add_registry_args(a)
+    c = sub.add_parser(
+        "crawl", parents=[common], help="add many tags of one repository, e.g. every Iron Bank UBI 9 release"
+    )
+    c.add_argument("repository", help="e.g. registry1.dso.mil/ironbank/redhat/ubi/ubi9")
+    c.add_argument("--match", metavar="REGEX", help="only tags matching this regular expression")
+    c.add_argument("--limit", type=int, default=25, help="newest N tags to add, 0 for all (default: %(default)s)")
+    c.add_argument("--name", default="", help="label for these entries (default: derived from the repository)")
+    _add_registry_args(c)
+    sub.add_parser("list", parents=[common], help="show the catalogued images")
+    r = sub.add_parser("remove", parents=[common], help="remove entries whose reference matches")
+    r.add_argument("pattern", help="exact reference or regular expression")
+    args = p.parse_args(argv)
+
+    try:
+        cat = Catalog.load(args.catalog)
+    except ValueError as e:
+        print(f"error: {e}", file=sys.stderr)
+        return 2
+
+    if args.cmd == "list":
+        if not cat.entries:
+            print(f"The catalog at {cat.path} is empty. Add bases with `wimi catalog add` or `wimi catalog crawl`.")
+            return 0
+        for e in sorted(cat.entries, key=lambda e: e["ref"]):
+            n = len(e["diff_ids"])
+            layers = f"{n:>2} layer{'s' if n != 1 else ' '}"
+            print(f"{e['ref']:<70} {layers}  {(e.get('created') or '')[:10]}  {e.get('label', '')}")
+        print(f"\n{len(cat.entries)} images in {cat.path}")
+        return 0
+    if args.cmd == "remove":
+        n = cat.remove(args.pattern)
+        cat.save()
+        print(f"Removed {n} entr{'y' if n == 1 else 'ies'} from {cat.path}")
+        return 0
+
+    opts = _registry_opts(args)
+    common_opts = dict(platform=args.platform, cache_dir=args.cache_dir, log=lambda m: None)
+    if args.cmd == "add":
+        targets = [_split_spec(s) for s in args.images]
+    else:
+        try:
+            ref = parse_ref(args.repository)
+            tags = RegistryClient(ref, **opts).list_tags()
+        except RegistryError as e:
+            print(f"error: {e}", file=sys.stderr)
+            return 2
+        chosen = pick_tags(tags, args.match, args.limit)
+        print(f"{ref.registry}/{ref.repository}: {len(tags)} tags, adding {len(chosen)}", file=sys.stderr)
+        targets = [(args.name, f"{ref.registry}/{ref.repository}:{t}") for t in chosen]
+
+    failed = 0
+    for i, (name, image_ref) in enumerate(targets, 1):
+        try:
+            img = load_image(image_ref, fetch_layers=False, **common_opts, **opts)
+        except SourceError as e:
+            print(f"  skipped {image_ref}: {e}", file=sys.stderr)
+            failed += 1
+            continue
+        changed = cat.add(image_ref, img.diff_ids, label=name, digest=img.manifest_digest or "", created=img.created)
+        n = len(img.diff_ids)
+        print(
+            f"  {'added  ' if changed else 'current'}  {image_ref}  ({n} layer{'s' if n != 1 else ''})", file=sys.stderr
+        )
+        if i % 10 == 0:
+            cat.save()
+    cat.save()
+    print(f"Catalog now holds {len(cat.entries)} images: {cat.path}")
+    return 1 if failed and failed == len(targets) else 0
 
 
 def _dedupe(vs):
