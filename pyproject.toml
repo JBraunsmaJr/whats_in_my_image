@@ -1,0 +1,20 @@
+[build-system]
+requires = ["setuptools>=61"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "whats-in-my-image"
+version = "1.0.0"
+description = "Trace every package, library and program in a container image to the base image or build step that put it there."
+readme = "README.md"
+requires-python = ">=3.9"
+dependencies = []  # standard library only, so it installs on air-gapped hosts
+
+[project.optional-dependencies]
+zstd = ["zstandard"]  # only needed for zstd-compressed layers on Python < 3.14
+
+[project.scripts]
+wimi = "whats_in_my_image.cli:main"
+
+[tool.setuptools.packages.find]
+include = ["whats_in_my_image*"]

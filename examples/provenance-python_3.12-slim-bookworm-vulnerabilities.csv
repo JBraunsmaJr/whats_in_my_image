@@ -1,0 +1,294 @@
+id,severity,package,installed_version,fixed_version,introduced_by,layer,attribution,title
+CVE-2011-3374,LOW,apt,2.6.1,,Debian 12 base,1,matched to traced component,"It was found that apt-key in apt, all versions, do not correctly valid ..."
+TEMP-0841856-B18BAF,LOW,bash,5.2.15-2+b13,,Debian 12 base,1,matched to traced component,[Privilege escalation possible to other user than root]
+CVE-2026-53613,HIGH,bsdutils,1:2.38.1-5+deb12u3,,Debian 12 base,1,matched to traced component,util-linux: util-linux: TOCTOU in the mount program via ancestor directory swap on target path
+CVE-2026-76642,HIGH,bsdutils,1:2.38.1-5+deb12u3,,Debian 12 base,1,matched to traced component,util-linux: util-linux: failed external mount helper still runs privileged X-mount post-hooks
+CVE-2026-78408,HIGH,bsdutils,1:2.38.1-5+deb12u3,,Debian 12 base,1,matched to traced component,util-linux: util-linux: nsenter --join-cgroup leaks root cgroup migration authority
+CVE-2026-78409,HIGH,bsdutils,1:2.38.1-5+deb12u3,,Debian 12 base,1,matched to traced component,util-linux: util-linux: X-mount.subdir detached-tree resolution can escape via intermediate symlinks
+CVE-2026-78410,HIGH,bsdutils,1:2.38.1-5+deb12u3,,Debian 12 base,1,matched to traced component,"util-linux: util-linux: restricted bind mounts do not pin the source, allowing X-mount.owner/group/mode redirection"
+CVE-2026-13595,MEDIUM,bsdutils,1:2.38.1-5+deb12u3,,Debian 12 base,1,matched to traced component,util-linux: util-linux: heap use-after-free in libblkid nested partition probing
+CVE-2026-27456,MEDIUM,bsdutils,1:2.38.1-5+deb12u3,,Debian 12 base,1,matched to traced component,util-linux: TOCTOU in the mount program when setting up loop devices
+CVE-2026-3184,MEDIUM,bsdutils,1:2.38.1-5+deb12u3,,Debian 12 base,1,matched to traced component,util-linux: util-linux: Access control bypass due to improper hostname canonicalization
+CVE-2026-53615,MEDIUM,bsdutils,1:2.38.1-5+deb12u3,,Debian 12 base,1,matched to traced component,[Integer Overflow or Wraparound in libblkid/src/partitions/dos.c]
+CVE-2022-0563,LOW,bsdutils,1:2.38.1-5+deb12u3,,Debian 12 base,1,matched to traced component,util-linux: partial disclosure of arbitrary files in chfn and chsh when compiled with libreadline
+CVE-2025-14104,LOW,bsdutils,1:2.38.1-5+deb12u3,,Debian 12 base,1,matched to traced component,util-linux: util-linux: Heap buffer overread in setpwnam() when processing 256-byte usernames
+CVE-2016-2781,LOW,coreutils,9.1-1,,Debian 12 base,1,matched to traced component,coreutils: Non-privileged session can escape to the parent session in chroot
+CVE-2017-18018,LOW,coreutils,9.1-1,,Debian 12 base,1,matched to traced component,coreutils: race condition vulnerability in chown and chgrp
+CVE-2025-5278,LOW,coreutils,9.1-1,,Debian 12 base,1,matched to traced component,coreutils: Heap Buffer Under-Read in GNU Coreutils sort via Key Specification
+CVE-2026-56391,LOW,coreutils,9.1-1,,Debian 12 base,1,matched to traced component,coreutils: GNU coreutils uniq: Denial of Service and information disclosure via out-of-bounds read with multibyte input
+CVE-2026-56392,LOW,coreutils,9.1-1,,Debian 12 base,1,matched to traced component,coreutils: GNU coreutils unexpand: Denial of Service via crafted tab stop values
+CVE-2026-102473,MEDIUM,dash,0.5.12-2,,Debian 12 base,1,matched to traced component,dash: dash: Super-polynomial backtracking in pmatch when libc fnmatch is disabled
+CVE-2026-102474,LOW,dash,0.5.12-2,,Debian 12 base,1,matched to traced component,dash: dash: Heap out-of-bounds write in conv_escape via undersized Unicode escape reservation
+CVE-2026-53910,LOW,diffutils,1:3.8-4,,Debian 12 base,1,matched to traced component,diffutils: heap‑based buffer overflow due to multiple signed integer overflows in line‑mapping calculations
+CVE-2026-102010,MEDIUM,gcc-12-base,12.2.0-14+deb12u1,,Debian 12 base,1,matched to traced component,gcc-toolset-15-gcc: gcc: gcc-toolset-16: gcc: Denial of Service via use-after-free in binary heap erase_if
+CVE-2022-27943,LOW,gcc-12-base,12.2.0-14+deb12u1,,Debian 12 base,1,matched to traced component,binutils: libiberty/rust-demangle.c in GNU GCC 11.2 allows stack exhaustion in demangle_const
+CVE-2025-30258,MEDIUM,gpgv,2.2.40-1.1+deb12u2,,Debian 12 base,1,matched to traced component,gnupg: verification DoS due to a malicious subkey in the keyring
+CVE-2025-68972,MEDIUM,gpgv,2.2.40-1.1+deb12u2,,Debian 12 base,1,matched to traced component,gnupg: GnuPG: Signature bypass via form feed character in signed messages
+CVE-2022-3219,LOW,gpgv,2.2.40-1.1+deb12u2,,Debian 12 base,1,matched to traced component,gnupg: denial of service issue (resource consumption) using compressed packets
+CVE-2026-57062,LOW,gpgv,2.2.40-1.1+deb12u2,,Debian 12 base,1,matched to traced component,GnuPG: Incorrect cryptographic message parsing
+CVE-2026-41992,HIGH,gzip,1.12-1,,Debian 12 base,1,matched to traced component,gzip: gzip: Information disclosure via global buffer overflow in LZH decompression
+CVE-2026-41991,MEDIUM,gzip,1.12-1,,Debian 12 base,1,matched to traced component,gzip: gzip: Arbitrary file overwrite via insecure temporary file handling in gzexe utility
+CVE-2026-54369,HIGH,libacl1,2.3.1-3,,Debian 12 base,1,matched to traced component,acl: Symlink traversal privilege escalation via libacl functions
+CVE-2026-54370,MEDIUM,libacl1,2.3.1-3,,Debian 12 base,1,matched to traced component,acl: TOCTOU Symlink Traversal via getfacl/setfacl
+CVE-2011-3374,LOW,libapt-pkg6.0,2.6.1,,Debian 12 base,1,matched to traced component,"It was found that apt-key in apt, all versions, do not correctly valid ..."
+CVE-2026-54371,MEDIUM,libattr1,1:2.5.1-4,,Debian 12 base,1,matched to traced component,attr: attr: Symlink Traversal Privilege Escalation via getfattr and setfattr
+CVE-2026-53613,HIGH,libblkid1,2.38.1-5+deb12u3,,Debian 12 base,1,matched to traced component,util-linux: util-linux: TOCTOU in the mount program via ancestor directory swap on target path
+CVE-2026-76642,HIGH,libblkid1,2.38.1-5+deb12u3,,Debian 12 base,1,matched to traced component,util-linux: util-linux: failed external mount helper still runs privileged X-mount post-hooks
+CVE-2026-78408,HIGH,libblkid1,2.38.1-5+deb12u3,,Debian 12 base,1,matched to traced component,util-linux: util-linux: nsenter --join-cgroup leaks root cgroup migration authority
+CVE-2026-78409,HIGH,libblkid1,2.38.1-5+deb12u3,,Debian 12 base,1,matched to traced component,util-linux: util-linux: X-mount.subdir detached-tree resolution can escape via intermediate symlinks
+CVE-2026-78410,HIGH,libblkid1,2.38.1-5+deb12u3,,Debian 12 base,1,matched to traced component,"util-linux: util-linux: restricted bind mounts do not pin the source, allowing X-mount.owner/group/mode redirection"
+CVE-2026-13595,MEDIUM,libblkid1,2.38.1-5+deb12u3,,Debian 12 base,1,matched to traced component,util-linux: util-linux: heap use-after-free in libblkid nested partition probing
+CVE-2026-27456,MEDIUM,libblkid1,2.38.1-5+deb12u3,,Debian 12 base,1,matched to traced component,util-linux: TOCTOU in the mount program when setting up loop devices
+CVE-2026-3184,MEDIUM,libblkid1,2.38.1-5+deb12u3,,Debian 12 base,1,matched to traced component,util-linux: util-linux: Access control bypass due to improper hostname canonicalization
+CVE-2026-53615,MEDIUM,libblkid1,2.38.1-5+deb12u3,,Debian 12 base,1,matched to traced component,[Integer Overflow or Wraparound in libblkid/src/partitions/dos.c]
+CVE-2022-0563,LOW,libblkid1,2.38.1-5+deb12u3,,Debian 12 base,1,matched to traced component,util-linux: partial disclosure of arbitrary files in chfn and chsh when compiled with libreadline
+CVE-2025-14104,LOW,libblkid1,2.38.1-5+deb12u3,,Debian 12 base,1,matched to traced component,util-linux: util-linux: Heap buffer overread in setpwnam() when processing 256-byte usernames
+CVE-2026-42250,MEDIUM,libbz2-1.0,1.0.8-5+b1,,Debian 12 base,1,matched to traced component,bzip2: bzip2: Denial of Service in bzip2recover via a specially crafted file
+CVE-2026-18374,MEDIUM,libc-bin,2.36-9+deb12u14,,Debian 12 base,1,matched to traced component,glibc: glibc: Heap buffer overflow via attacker-controlled fopen mode string
+CVE-2026-19499,MEDIUM,libc-bin,2.36-9+deb12u14,,Debian 12 base,1,matched to traced component,glibc: Buffer Overflow in strfmon right-justification padding
+CVE-2026-19542,MEDIUM,libc-bin,2.36-9+deb12u14,,Debian 12 base,1,matched to traced component,glibc: Fix out-of-bounds array write in tdelete
+CVE-2026-5435,MEDIUM,libc-bin,2.36-9+deb12u14,,Debian 12 base,1,matched to traced component,glibc: glibc: Out-of-bounds write via TSIG record processing
+CVE-2026-5450,MEDIUM,libc-bin,2.36-9+deb12u14,,Debian 12 base,1,matched to traced component,glibc: glibc: Heap Buffer Overflow in `scanf` with `%mc` format specifier and large width
+CVE-2026-5928,MEDIUM,libc-bin,2.36-9+deb12u14,,Debian 12 base,1,matched to traced component,glibc: glibc: Information disclosure or denial of service via ungetwc function with specific wide character encodings
+CVE-2026-6238,MEDIUM,libc-bin,2.36-9+deb12u14,,Debian 12 base,1,matched to traced component,glibc: glibc: Application crash or uninitialized memory read via crafted DNS response
+CVE-2026-6368,MEDIUM,libc-bin,2.36-9+deb12u14,,Debian 12 base,1,matched to traced component,glibc: glibc: Process abort due to invalid memory in wordexp
+CVE-2026-6791,MEDIUM,libc-bin,2.36-9+deb12u14,,Debian 12 base,1,matched to traced component,glibc: Glibc: Denial of Service via stack exhaustion during tilde expansion
+CVE-2026-77117,MEDIUM,libc-bin,2.36-9+deb12u14,,Debian 12 base,1,matched to traced component,glibc: Non-progress DoS in SHIFT_JISX0213 -&gt
+CVE-2026-80489,MEDIUM,libc-bin,2.36-9+deb12u14,,Debian 12 base,1,matched to traced component,glibc: Non-progress DoS in EUC_JISX0213 -> UCS-4 conversion state
+CVE-2026-8674,MEDIUM,libc-bin,2.36-9+deb12u14,,Debian 12 base,1,matched to traced component,glibc: glibc DNS stub resolver: Denial of Service via long search domain in configuration
+CVE-2026-86805,MEDIUM,libc-bin,2.36-9+deb12u14,,Debian 12 base,1,matched to traced component,glibc: glibc: Privilege escalation and arbitrary code execution via TOCTOU race condition in dynamic loader
+CVE-2026-89092,MEDIUM,libc-bin,2.36-9+deb12u14,,Debian 12 base,1,matched to traced component,glibc: nscd stack overflow leads to degraded DNS resolution
+CVE-2026-95818,MEDIUM,libc-bin,2.36-9+deb12u14,,Debian 12 base,1,matched to traced component,glibc: glibc: Local attacker can cause denial of service and information disclosure via stack-based buffer overflow.
+CVE-2010-4756,LOW,libc-bin,2.36-9+deb12u14,,Debian 12 base,1,matched to traced component,glibc: glob implementation can cause excessive CPU and memory consumption due to crafted glob expressions
+CVE-2018-20796,LOW,libc-bin,2.36-9+deb12u14,,Debian 12 base,1,matched to traced component,glibc: uncontrolled recursion in function check_dst_limits_calc_pos_1 in posix/regexec.c
+CVE-2019-1010022,LOW,libc-bin,2.36-9+deb12u14,,Debian 12 base,1,matched to traced component,glibc: stack guard protection bypass
+CVE-2019-1010023,LOW,libc-bin,2.36-9+deb12u14,,Debian 12 base,1,matched to traced component,glibc: running ldd on malicious ELF leads to code execution because of wrong size computation
+CVE-2019-1010024,LOW,libc-bin,2.36-9+deb12u14,,Debian 12 base,1,matched to traced component,glibc: ASLR bypass using cache of thread stack and heap
+CVE-2019-1010025,LOW,libc-bin,2.36-9+deb12u14,,Debian 12 base,1,matched to traced component,glibc: information disclosure of heap addresses of pthread_created thread
+CVE-2019-9192,LOW,libc-bin,2.36-9+deb12u14,,Debian 12 base,1,matched to traced component,glibc: uncontrolled recursion in function check_dst_limits_calc_pos_1 in posix/regexec.c
+CVE-2026-97399,LOW,libc-bin,2.36-9+deb12u14,,Debian 12 base,1,matched to traced component,glibc: glibc: Denial of Service via out-of-bounds read in strncasecmp
+CVE-2026-18374,MEDIUM,libc6,2.36-9+deb12u14,,Debian 12 base,1,matched to traced component,glibc: glibc: Heap buffer overflow via attacker-controlled fopen mode string
+CVE-2026-19499,MEDIUM,libc6,2.36-9+deb12u14,,Debian 12 base,1,matched to traced component,glibc: Buffer Overflow in strfmon right-justification padding
+CVE-2026-19542,MEDIUM,libc6,2.36-9+deb12u14,,Debian 12 base,1,matched to traced component,glibc: Fix out-of-bounds array write in tdelete
+CVE-2026-5435,MEDIUM,libc6,2.36-9+deb12u14,,Debian 12 base,1,matched to traced component,glibc: glibc: Out-of-bounds write via TSIG record processing
+CVE-2026-5450,MEDIUM,libc6,2.36-9+deb12u14,,Debian 12 base,1,matched to traced component,glibc: glibc: Heap Buffer Overflow in `scanf` with `%mc` format specifier and large width
+CVE-2026-5928,MEDIUM,libc6,2.36-9+deb12u14,,Debian 12 base,1,matched to traced component,glibc: glibc: Information disclosure or denial of service via ungetwc function with specific wide character encodings
+CVE-2026-6238,MEDIUM,libc6,2.36-9+deb12u14,,Debian 12 base,1,matched to traced component,glibc: glibc: Application crash or uninitialized memory read via crafted DNS response
+CVE-2026-6368,MEDIUM,libc6,2.36-9+deb12u14,,Debian 12 base,1,matched to traced component,glibc: glibc: Process abort due to invalid memory in wordexp
+CVE-2026-6791,MEDIUM,libc6,2.36-9+deb12u14,,Debian 12 base,1,matched to traced component,glibc: Glibc: Denial of Service via stack exhaustion during tilde expansion
+CVE-2026-77117,MEDIUM,libc6,2.36-9+deb12u14,,Debian 12 base,1,matched to traced component,glibc: Non-progress DoS in SHIFT_JISX0213 -&gt
+CVE-2026-80489,MEDIUM,libc6,2.36-9+deb12u14,,Debian 12 base,1,matched to traced component,glibc: Non-progress DoS in EUC_JISX0213 -> UCS-4 conversion state
+CVE-2026-8674,MEDIUM,libc6,2.36-9+deb12u14,,Debian 12 base,1,matched to traced component,glibc: glibc DNS stub resolver: Denial of Service via long search domain in configuration
+CVE-2026-86805,MEDIUM,libc6,2.36-9+deb12u14,,Debian 12 base,1,matched to traced component,glibc: glibc: Privilege escalation and arbitrary code execution via TOCTOU race condition in dynamic loader
+CVE-2026-89092,MEDIUM,libc6,2.36-9+deb12u14,,Debian 12 base,1,matched to traced component,glibc: nscd stack overflow leads to degraded DNS resolution
+CVE-2026-95818,MEDIUM,libc6,2.36-9+deb12u14,,Debian 12 base,1,matched to traced component,glibc: glibc: Local attacker can cause denial of service and information disclosure via stack-based buffer overflow.
+CVE-2010-4756,LOW,libc6,2.36-9+deb12u14,,Debian 12 base,1,matched to traced component,glibc: glob implementation can cause excessive CPU and memory consumption due to crafted glob expressions
+CVE-2018-20796,LOW,libc6,2.36-9+deb12u14,,Debian 12 base,1,matched to traced component,glibc: uncontrolled recursion in function check_dst_limits_calc_pos_1 in posix/regexec.c
+CVE-2019-1010022,LOW,libc6,2.36-9+deb12u14,,Debian 12 base,1,matched to traced component,glibc: stack guard protection bypass
+CVE-2019-1010023,LOW,libc6,2.36-9+deb12u14,,Debian 12 base,1,matched to traced component,glibc: running ldd on malicious ELF leads to code execution because of wrong size computation
+CVE-2019-1010024,LOW,libc6,2.36-9+deb12u14,,Debian 12 base,1,matched to traced component,glibc: ASLR bypass using cache of thread stack and heap
+CVE-2019-1010025,LOW,libc6,2.36-9+deb12u14,,Debian 12 base,1,matched to traced component,glibc: information disclosure of heap addresses of pthread_created thread
+CVE-2019-9192,LOW,libc6,2.36-9+deb12u14,,Debian 12 base,1,matched to traced component,glibc: uncontrolled recursion in function check_dst_limits_calc_pos_1 in posix/regexec.c
+CVE-2026-97399,LOW,libc6,2.36-9+deb12u14,,Debian 12 base,1,matched to traced component,glibc: glibc: Denial of Service via out-of-bounds read in strncasecmp
+CVE-2026-102010,MEDIUM,libgcc-s1,12.2.0-14+deb12u1,,Debian 12 base,1,matched to traced component,gcc-toolset-15-gcc: gcc: gcc-toolset-16: gcc: Denial of Service via use-after-free in binary heap erase_if
+CVE-2022-27943,LOW,libgcc-s1,12.2.0-14+deb12u1,,Debian 12 base,1,matched to traced component,binutils: libiberty/rust-demangle.c in GNU GCC 11.2 allows stack exhaustion in demangle_const
+CVE-2018-6829,LOW,libgcrypt20,1.10.1-3+deb12u1,,Debian 12 base,1,matched to traced component,libgcrypt: ElGamal implementation doesn't have semantic security due to incorrectly encoded plaintexts possibly allowing to obtain sensitive information
+CVE-2024-2236,LOW,libgcrypt20,1.10.1-3+deb12u1,,Debian 12 base,1,matched to traced component,libgcrypt: vulnerable to Marvin Attack
+CVE-2011-3389,LOW,libgnutls30,3.7.9-2+deb12u7,,Debian 12 base,1,matched to traced component,HTTPS: block-wise chosen-plaintext attack against SSL/TLS (BEAST)
+CVE-2018-5709,LOW,libgssapi-krb5-2,1.20.1-2+deb12u5,,Python image build,3,matched to traced component,krb5: integer overflow in dbentry->n_key_data in kadmin/dbutil/dump.c
+CVE-2024-26458,LOW,libgssapi-krb5-2,1.20.1-2+deb12u5,,Python image build,3,matched to traced component,krb5: Memory leak at /krb5/src/lib/rpc/pmap_rmt.c
+CVE-2024-26461,LOW,libgssapi-krb5-2,1.20.1-2+deb12u5,,Python image build,3,matched to traced component,krb5: Memory leak at /krb5/src/lib/gssapi/krb5/k5sealv3.c
+CVE-2026-11850,LOW,libgssapi-krb5-2,1.20.1-2+deb12u5,,Python image build,3,matched to traced component,krb5: krb5: integer underflow in berval2tl_data() leads to heap out-of-bounds read
+CVE-2018-5709,LOW,libk5crypto3,1.20.1-2+deb12u5,,Python image build,3,matched to traced component,krb5: integer overflow in dbentry->n_key_data in kadmin/dbutil/dump.c
+CVE-2024-26458,LOW,libk5crypto3,1.20.1-2+deb12u5,,Python image build,3,matched to traced component,krb5: Memory leak at /krb5/src/lib/rpc/pmap_rmt.c
+CVE-2024-26461,LOW,libk5crypto3,1.20.1-2+deb12u5,,Python image build,3,matched to traced component,krb5: Memory leak at /krb5/src/lib/gssapi/krb5/k5sealv3.c
+CVE-2026-11850,LOW,libk5crypto3,1.20.1-2+deb12u5,,Python image build,3,matched to traced component,krb5: krb5: integer underflow in berval2tl_data() leads to heap out-of-bounds read
+CVE-2018-5709,LOW,libkrb5-3,1.20.1-2+deb12u5,,Python image build,3,matched to traced component,krb5: integer overflow in dbentry->n_key_data in kadmin/dbutil/dump.c
+CVE-2024-26458,LOW,libkrb5-3,1.20.1-2+deb12u5,,Python image build,3,matched to traced component,krb5: Memory leak at /krb5/src/lib/rpc/pmap_rmt.c
+CVE-2024-26461,LOW,libkrb5-3,1.20.1-2+deb12u5,,Python image build,3,matched to traced component,krb5: Memory leak at /krb5/src/lib/gssapi/krb5/k5sealv3.c
+CVE-2026-11850,LOW,libkrb5-3,1.20.1-2+deb12u5,,Python image build,3,matched to traced component,krb5: krb5: integer underflow in berval2tl_data() leads to heap out-of-bounds read
+CVE-2018-5709,LOW,libkrb5support0,1.20.1-2+deb12u5,,Python image build,3,matched to traced component,krb5: integer overflow in dbentry->n_key_data in kadmin/dbutil/dump.c
+CVE-2024-26458,LOW,libkrb5support0,1.20.1-2+deb12u5,,Python image build,3,matched to traced component,krb5: Memory leak at /krb5/src/lib/rpc/pmap_rmt.c
+CVE-2024-26461,LOW,libkrb5support0,1.20.1-2+deb12u5,,Python image build,3,matched to traced component,krb5: Memory leak at /krb5/src/lib/gssapi/krb5/k5sealv3.c
+CVE-2026-11850,LOW,libkrb5support0,1.20.1-2+deb12u5,,Python image build,3,matched to traced component,krb5: krb5: integer underflow in berval2tl_data() leads to heap out-of-bounds read
+CVE-2026-53613,HIGH,libmount1,2.38.1-5+deb12u3,,Debian 12 base,1,matched to traced component,util-linux: util-linux: TOCTOU in the mount program via ancestor directory swap on target path
+CVE-2026-76642,HIGH,libmount1,2.38.1-5+deb12u3,,Debian 12 base,1,matched to traced component,util-linux: util-linux: failed external mount helper still runs privileged X-mount post-hooks
+CVE-2026-78408,HIGH,libmount1,2.38.1-5+deb12u3,,Debian 12 base,1,matched to traced component,util-linux: util-linux: nsenter --join-cgroup leaks root cgroup migration authority
+CVE-2026-78409,HIGH,libmount1,2.38.1-5+deb12u3,,Debian 12 base,1,matched to traced component,util-linux: util-linux: X-mount.subdir detached-tree resolution can escape via intermediate symlinks
+CVE-2026-78410,HIGH,libmount1,2.38.1-5+deb12u3,,Debian 12 base,1,matched to traced component,"util-linux: util-linux: restricted bind mounts do not pin the source, allowing X-mount.owner/group/mode redirection"
+CVE-2026-13595,MEDIUM,libmount1,2.38.1-5+deb12u3,,Debian 12 base,1,matched to traced component,util-linux: util-linux: heap use-after-free in libblkid nested partition probing
+CVE-2026-27456,MEDIUM,libmount1,2.38.1-5+deb12u3,,Debian 12 base,1,matched to traced component,util-linux: TOCTOU in the mount program when setting up loop devices
+CVE-2026-3184,MEDIUM,libmount1,2.38.1-5+deb12u3,,Debian 12 base,1,matched to traced component,util-linux: util-linux: Access control bypass due to improper hostname canonicalization
+CVE-2026-53615,MEDIUM,libmount1,2.38.1-5+deb12u3,,Debian 12 base,1,matched to traced component,[Integer Overflow or Wraparound in libblkid/src/partitions/dos.c]
+CVE-2022-0563,LOW,libmount1,2.38.1-5+deb12u3,,Debian 12 base,1,matched to traced component,util-linux: partial disclosure of arbitrary files in chfn and chsh when compiled with libreadline
+CVE-2025-14104,LOW,libmount1,2.38.1-5+deb12u3,,Debian 12 base,1,matched to traced component,util-linux: util-linux: Heap buffer overread in setpwnam() when processing 256-byte usernames
+CVE-2025-69720,HIGH,libncursesw6,6.4-4,,Python image build,3,matched to traced component,ncurses: ncurses: Buffer overflow vulnerability may lead to arbitrary code execution.
+CVE-2023-50495,MEDIUM,libncursesw6,6.4-4,,Python image build,3,matched to traced component,ncurses: segmentation fault via _nc_wrap_entry()
+CVE-2025-6141,LOW,libncursesw6,6.4-4,,Python image build,3,matched to traced component,gnu-ncurses: ncurses Stack Buffer Overflow
+CVE-2026-13757,MEDIUM,libp11-kit0,0.24.1-2,,Debian 12 base,1,matched to traced component,p11-kit: Stack exhaustion via unbounded recursion in RPC attribute parsing
+CVE-2026-18938,MEDIUM,libp11-kit0,0.24.1-2,,Debian 12 base,1,matched to traced component,p11-kit: Integer overflow in RPC attribute-array length calculation can under-allocate nested attribute storage on 32 bit systems
+CVE-2024-10041,MEDIUM,libpam-modules,1.5.2-6+deb12u2,,Debian 12 base,1,matched to traced component,pam: libpam: Libpam vulnerable to read hashed password
+CVE-2026-54411,MEDIUM,libpam-modules,1.5.2-6+deb12u2,,Debian 12 base,1,matched to traced component,linux-pam: Plaintext password recovery via timing discrepancy in pam_userdb module
+CVE-2024-10041,MEDIUM,libpam-modules-bin,1.5.2-6+deb12u2,,Debian 12 base,1,matched to traced component,pam: libpam: Libpam vulnerable to read hashed password
+CVE-2026-54411,MEDIUM,libpam-modules-bin,1.5.2-6+deb12u2,,Debian 12 base,1,matched to traced component,linux-pam: Plaintext password recovery via timing discrepancy in pam_userdb module
+CVE-2024-10041,MEDIUM,libpam-runtime,1.5.2-6+deb12u2,,Debian 12 base,1,matched to traced component,pam: libpam: Libpam vulnerable to read hashed password
+CVE-2026-54411,MEDIUM,libpam-runtime,1.5.2-6+deb12u2,,Debian 12 base,1,matched to traced component,linux-pam: Plaintext password recovery via timing discrepancy in pam_userdb module
+CVE-2024-10041,MEDIUM,libpam0g,1.5.2-6+deb12u2,,Debian 12 base,1,matched to traced component,pam: libpam: Libpam vulnerable to read hashed password
+CVE-2026-54411,MEDIUM,libpam0g,1.5.2-6+deb12u2,,Debian 12 base,1,matched to traced component,linux-pam: Plaintext password recovery via timing discrepancy in pam_userdb module
+CVE-2026-103111,HIGH,libpcre2-8-0,10.42-1+deb12u1,,Debian 12 base,1,matched to traced component,pcre2: pcre2: Out-of-bounds write via crafted regular expression
+CVE-2026-53613,HIGH,libsmartcols1,2.38.1-5+deb12u3,,Debian 12 base,1,matched to traced component,util-linux: util-linux: TOCTOU in the mount program via ancestor directory swap on target path
+CVE-2026-76642,HIGH,libsmartcols1,2.38.1-5+deb12u3,,Debian 12 base,1,matched to traced component,util-linux: util-linux: failed external mount helper still runs privileged X-mount post-hooks
+CVE-2026-78408,HIGH,libsmartcols1,2.38.1-5+deb12u3,,Debian 12 base,1,matched to traced component,util-linux: util-linux: nsenter --join-cgroup leaks root cgroup migration authority
+CVE-2026-78409,HIGH,libsmartcols1,2.38.1-5+deb12u3,,Debian 12 base,1,matched to traced component,util-linux: util-linux: X-mount.subdir detached-tree resolution can escape via intermediate symlinks
+CVE-2026-78410,HIGH,libsmartcols1,2.38.1-5+deb12u3,,Debian 12 base,1,matched to traced component,"util-linux: util-linux: restricted bind mounts do not pin the source, allowing X-mount.owner/group/mode redirection"
+CVE-2026-13595,MEDIUM,libsmartcols1,2.38.1-5+deb12u3,,Debian 12 base,1,matched to traced component,util-linux: util-linux: heap use-after-free in libblkid nested partition probing
+CVE-2026-27456,MEDIUM,libsmartcols1,2.38.1-5+deb12u3,,Debian 12 base,1,matched to traced component,util-linux: TOCTOU in the mount program when setting up loop devices
+CVE-2026-3184,MEDIUM,libsmartcols1,2.38.1-5+deb12u3,,Debian 12 base,1,matched to traced component,util-linux: util-linux: Access control bypass due to improper hostname canonicalization
+CVE-2026-53615,MEDIUM,libsmartcols1,2.38.1-5+deb12u3,,Debian 12 base,1,matched to traced component,[Integer Overflow or Wraparound in libblkid/src/partitions/dos.c]
+CVE-2022-0563,LOW,libsmartcols1,2.38.1-5+deb12u3,,Debian 12 base,1,matched to traced component,util-linux: partial disclosure of arbitrary files in chfn and chsh when compiled with libreadline
+CVE-2025-14104,LOW,libsmartcols1,2.38.1-5+deb12u3,,Debian 12 base,1,matched to traced component,util-linux: util-linux: Heap buffer overread in setpwnam() when processing 256-byte usernames
+CVE-2025-7458,CRITICAL,libsqlite3-0,3.40.1-2+deb12u2,,Python image build,3,matched to traced component,sqlite: SQLite integer overflow
+CVE-2026-11822,HIGH,libsqlite3-0,3.40.1-2+deb12u2,,Python image build,3,matched to traced component,sqlite: SQLite: Arbitrary code execution via crafted FTS5 full-text search data
+CVE-2026-11824,HIGH,libsqlite3-0,3.40.1-2+deb12u2,,Python image build,3,matched to traced component,sqlite: SQLite: Arbitrary code execution and crash via heap-based buffer overflow in FTS5
+CVE-2025-7709,MEDIUM,libsqlite3-0,3.40.1-2+deb12u2,,Python image build,3,matched to traced component,An integer overflow exists in the  FTS5 https://sqlite.org/fts5.html e ...
+CVE-2026-50812,MEDIUM,libsqlite3-0,3.40.1-2+deb12u2,,Python image build,3,matched to traced component,sqlite: SQLite: Denial of Service via malformed changeset in Session Extension
+CVE-2026-50813,MEDIUM,libsqlite3-0,3.40.1-2+deb12u2,,Python image build,3,matched to traced component,sqlite: SQLite: Information disclosure via Session Extension changeset merge path
+CVE-2021-45346,LOW,libsqlite3-0,3.40.1-2+deb12u2,,Python image build,3,matched to traced component,sqlite: crafted SQL query allows a malicious user to obtain sensitive information
+CVE-2025-29088,LOW,libsqlite3-0,3.40.1-2+deb12u2,,Python image build,3,matched to traced component,sqlite: Denial of Service in SQLite
+CVE-2025-70873,LOW,libsqlite3-0,3.40.1-2+deb12u2,,Python image build,3,matched to traced component,sqlite: SQLite: Information Disclosure via Crafted ZIP File
+CVE-2026-84782,HIGH,libssl3,3.0.20-1~deb12u2,,Python image build,2,matched to traced component,openssl: compat-openssl: openssl: Information disclosure via DTLS handshake retransmission
+CVE-2026-54872,MEDIUM,libssl3,3.0.20-1~deb12u2,,Python image build,2,matched to traced component,openssl: OpenSSL: Private key recovery via timing side-channel in generic elliptic curve operations
+CVE-2026-63072,MEDIUM,libssl3,3.0.20-1~deb12u2,3.0.22-1~deb12u1,Python image build,2,matched to traced component,openssl: heap buffer overflow in CMS key unwrapping
+CVE-2026-63076,MEDIUM,libssl3,3.0.20-1~deb12u2,3.0.22-1~deb12u1,Python image build,2,matched to traced component,openssl: invalid pointer dereference in CMP server via crafted protectionAlg
+CVE-2026-75805,MEDIUM,libssl3,3.0.20-1~deb12u2,,Python image build,2,matched to traced component,openssl: openssl: Denial of Service via crafted CMP certificate revocation response
+CVE-2026-75806,MEDIUM,libssl3,3.0.20-1~deb12u2,,Python image build,2,matched to traced component,openssl: OpenSSL: Denial of Service via undersized DTLS record
+CVE-2026-77696,MEDIUM,libssl3,3.0.20-1~deb12u2,,Python image build,2,matched to traced component,openssl: OpenSSL: Private key recovery via SM2 timing side-channel
+CVE-2025-27587,LOW,libssl3,3.0.20-1~deb12u2,,Python image build,2,matched to traced component,OpenSSL 3.0.0 through 3.3.2 on the PowerPC architecture is vulnerable  ...
+CVE-2026-35189,LOW,libssl3,3.0.20-1~deb12u2,,Python image build,2,matched to traced component,openssl: openssl: Denial of Service via excessive memory allocation in CRL distribution point processing
+CVE-2026-42767,LOW,libssl3,3.0.20-1~deb12u2,3.0.22-1~deb12u1,Python image build,2,matched to traced component,openssl: NULL Pointer Dereference in CRMF EncryptedValue Decryption
+CVE-2026-54874,LOW,libssl3,3.0.20-1~deb12u2,3.0.22-1~deb12u1,Python image build,2,matched to traced component,openssl: excessive memory use buffering DTLS records for a future epoch
+CVE-2026-63074,LOW,libssl3,3.0.20-1~deb12u2,3.0.22-1~deb12u1,Python image build,2,matched to traced component,openssl: CMP indefinite cache growth of ExtraCerts
+CVE-2026-75803,LOW,libssl3,3.0.20-1~deb12u2,3.0.22-1~deb12u1,Python image build,2,matched to traced component,openssl: openssl: AEAD forgeries possible with empty ciphertext in EVP_Cipher()
+CVE-2026-102010,MEDIUM,libstdc++6,12.2.0-14+deb12u1,,Debian 12 base,1,matched to traced component,gcc-toolset-15-gcc: gcc: gcc-toolset-16: gcc: Denial of Service via use-after-free in binary heap erase_if
+CVE-2022-27943,LOW,libstdc++6,12.2.0-14+deb12u1,,Debian 12 base,1,matched to traced component,binutils: libiberty/rust-demangle.c in GNU GCC 11.2 allows stack exhaustion in demangle_const
+CVE-2026-16742,HIGH,libsystemd0,252.39-1~deb12u2,,Debian 12 base,1,matched to traced component,systemd: systemd-homed: Local privilege escalation via missing home-record signature verification
+CVE-2026-15059,MEDIUM,libsystemd0,252.39-1~deb12u2,,Debian 12 base,1,matched to traced component,systemd: systemd-oomd: Unprivileged users can terminate arbitrary processes via IPC API
+CVE-2013-4392,LOW,libsystemd0,252.39-1~deb12u2,,Debian 12 base,1,matched to traced component,systemd: TOCTOU race condition when updating file permissions and SELinux security contexts
+CVE-2023-31437,LOW,libsystemd0,252.39-1~deb12u2,,Debian 12 base,1,matched to traced component,An issue was discovered in systemd 253. An attacker can modify a seale ...
+CVE-2023-31438,LOW,libsystemd0,252.39-1~deb12u2,,Debian 12 base,1,matched to traced component,An issue was discovered in systemd 253. An attacker can truncate a sea ...
+CVE-2023-31439,LOW,libsystemd0,252.39-1~deb12u2,,Debian 12 base,1,matched to traced component,An issue was discovered in systemd 253. An attacker can modify the con ...
+CVE-2026-40228,LOW,libsystemd0,252.39-1~deb12u2,,Debian 12 base,1,matched to traced component,systemd: systemd-journald: Unintended output to user terminals via logger command
+CVE-2025-13151,LOW,libtasn1-6,4.19.0-2+deb12u1,,Debian 12 base,1,matched to traced component,libtasn1: libtasn1: Denial of Service via stack-based buffer overflow in asn1_expend_octet_string
+CVE-2025-69720,HIGH,libtinfo6,6.4-4,,Debian 12 base,1,matched to traced component,ncurses: ncurses: Buffer overflow vulnerability may lead to arbitrary code execution.
+CVE-2023-50495,MEDIUM,libtinfo6,6.4-4,,Debian 12 base,1,matched to traced component,ncurses: segmentation fault via _nc_wrap_entry()
+CVE-2025-6141,LOW,libtinfo6,6.4-4,,Debian 12 base,1,matched to traced component,gnu-ncurses: ncurses Stack Buffer Overflow
+CVE-2026-16742,HIGH,libudev1,252.39-1~deb12u2,,Debian 12 base,1,matched to traced component,systemd: systemd-homed: Local privilege escalation via missing home-record signature verification
+CVE-2026-15059,MEDIUM,libudev1,252.39-1~deb12u2,,Debian 12 base,1,matched to traced component,systemd: systemd-oomd: Unprivileged users can terminate arbitrary processes via IPC API
+CVE-2013-4392,LOW,libudev1,252.39-1~deb12u2,,Debian 12 base,1,matched to traced component,systemd: TOCTOU race condition when updating file permissions and SELinux security contexts
+CVE-2023-31437,LOW,libudev1,252.39-1~deb12u2,,Debian 12 base,1,matched to traced component,An issue was discovered in systemd 253. An attacker can modify a seale ...
+CVE-2023-31438,LOW,libudev1,252.39-1~deb12u2,,Debian 12 base,1,matched to traced component,An issue was discovered in systemd 253. An attacker can truncate a sea ...
+CVE-2023-31439,LOW,libudev1,252.39-1~deb12u2,,Debian 12 base,1,matched to traced component,An issue was discovered in systemd 253. An attacker can modify the con ...
+CVE-2026-40228,LOW,libudev1,252.39-1~deb12u2,,Debian 12 base,1,matched to traced component,systemd: systemd-journald: Unintended output to user terminals via logger command
+CVE-2026-53613,HIGH,libuuid1,2.38.1-5+deb12u3,,Debian 12 base,1,matched to traced component,util-linux: util-linux: TOCTOU in the mount program via ancestor directory swap on target path
+CVE-2026-76642,HIGH,libuuid1,2.38.1-5+deb12u3,,Debian 12 base,1,matched to traced component,util-linux: util-linux: failed external mount helper still runs privileged X-mount post-hooks
+CVE-2026-78408,HIGH,libuuid1,2.38.1-5+deb12u3,,Debian 12 base,1,matched to traced component,util-linux: util-linux: nsenter --join-cgroup leaks root cgroup migration authority
+CVE-2026-78409,HIGH,libuuid1,2.38.1-5+deb12u3,,Debian 12 base,1,matched to traced component,util-linux: util-linux: X-mount.subdir detached-tree resolution can escape via intermediate symlinks
+CVE-2026-78410,HIGH,libuuid1,2.38.1-5+deb12u3,,Debian 12 base,1,matched to traced component,"util-linux: util-linux: restricted bind mounts do not pin the source, allowing X-mount.owner/group/mode redirection"
+CVE-2026-13595,MEDIUM,libuuid1,2.38.1-5+deb12u3,,Debian 12 base,1,matched to traced component,util-linux: util-linux: heap use-after-free in libblkid nested partition probing
+CVE-2026-27456,MEDIUM,libuuid1,2.38.1-5+deb12u3,,Debian 12 base,1,matched to traced component,util-linux: TOCTOU in the mount program when setting up loop devices
+CVE-2026-3184,MEDIUM,libuuid1,2.38.1-5+deb12u3,,Debian 12 base,1,matched to traced component,util-linux: util-linux: Access control bypass due to improper hostname canonicalization
+CVE-2026-53615,MEDIUM,libuuid1,2.38.1-5+deb12u3,,Debian 12 base,1,matched to traced component,[Integer Overflow or Wraparound in libblkid/src/partitions/dos.c]
+CVE-2022-0563,LOW,libuuid1,2.38.1-5+deb12u3,,Debian 12 base,1,matched to traced component,util-linux: partial disclosure of arbitrary files in chfn and chsh when compiled with libreadline
+CVE-2025-14104,LOW,libuuid1,2.38.1-5+deb12u3,,Debian 12 base,1,matched to traced component,util-linux: util-linux: Heap buffer overread in setpwnam() when processing 256-byte usernames
+CVE-2007-5686,LOW,login,1:4.13+dfsg1-1+deb12u2,,Debian 12 base,1,matched to traced component,initscripts in rPath Linux 1 sets insecure permissions for the /var/lo ...
+CVE-2024-56433,LOW,login,1:4.13+dfsg1-1+deb12u2,,Debian 12 base,1,matched to traced component,shadow-utils: Default subordinate ID configuration in /etc/login.defs could lead to compromise
+TEMP-0628843-DBAD28,LOW,login,1:4.13+dfsg1-1+deb12u2,,Debian 12 base,1,matched to traced component,[more related to CVE-2005-4890]
+CVE-2026-53613,HIGH,mount,2.38.1-5+deb12u3,,Debian 12 base,1,matched to traced component,util-linux: util-linux: TOCTOU in the mount program via ancestor directory swap on target path
+CVE-2026-76642,HIGH,mount,2.38.1-5+deb12u3,,Debian 12 base,1,matched to traced component,util-linux: util-linux: failed external mount helper still runs privileged X-mount post-hooks
+CVE-2026-78408,HIGH,mount,2.38.1-5+deb12u3,,Debian 12 base,1,matched to traced component,util-linux: util-linux: nsenter --join-cgroup leaks root cgroup migration authority
+CVE-2026-78409,HIGH,mount,2.38.1-5+deb12u3,,Debian 12 base,1,matched to traced component,util-linux: util-linux: X-mount.subdir detached-tree resolution can escape via intermediate symlinks
+CVE-2026-78410,HIGH,mount,2.38.1-5+deb12u3,,Debian 12 base,1,matched to traced component,"util-linux: util-linux: restricted bind mounts do not pin the source, allowing X-mount.owner/group/mode redirection"
+CVE-2026-13595,MEDIUM,mount,2.38.1-5+deb12u3,,Debian 12 base,1,matched to traced component,util-linux: util-linux: heap use-after-free in libblkid nested partition probing
+CVE-2026-27456,MEDIUM,mount,2.38.1-5+deb12u3,,Debian 12 base,1,matched to traced component,util-linux: TOCTOU in the mount program when setting up loop devices
+CVE-2026-3184,MEDIUM,mount,2.38.1-5+deb12u3,,Debian 12 base,1,matched to traced component,util-linux: util-linux: Access control bypass due to improper hostname canonicalization
+CVE-2026-53615,MEDIUM,mount,2.38.1-5+deb12u3,,Debian 12 base,1,matched to traced component,[Integer Overflow or Wraparound in libblkid/src/partitions/dos.c]
+CVE-2022-0563,LOW,mount,2.38.1-5+deb12u3,,Debian 12 base,1,matched to traced component,util-linux: partial disclosure of arbitrary files in chfn and chsh when compiled with libreadline
+CVE-2025-14104,LOW,mount,2.38.1-5+deb12u3,,Debian 12 base,1,matched to traced component,util-linux: util-linux: Heap buffer overread in setpwnam() when processing 256-byte usernames
+CVE-2025-69720,HIGH,ncurses-base,6.4-4,,Debian 12 base,1,matched to traced component,ncurses: ncurses: Buffer overflow vulnerability may lead to arbitrary code execution.
+CVE-2023-50495,MEDIUM,ncurses-base,6.4-4,,Debian 12 base,1,matched to traced component,ncurses: segmentation fault via _nc_wrap_entry()
+CVE-2025-6141,LOW,ncurses-base,6.4-4,,Debian 12 base,1,matched to traced component,gnu-ncurses: ncurses Stack Buffer Overflow
+CVE-2025-69720,HIGH,ncurses-bin,6.4-4,,Debian 12 base,1,matched to traced component,ncurses: ncurses: Buffer overflow vulnerability may lead to arbitrary code execution.
+CVE-2023-50495,MEDIUM,ncurses-bin,6.4-4,,Debian 12 base,1,matched to traced component,ncurses: segmentation fault via _nc_wrap_entry()
+CVE-2025-6141,LOW,ncurses-bin,6.4-4,,Debian 12 base,1,matched to traced component,gnu-ncurses: ncurses Stack Buffer Overflow
+CVE-2026-84782,HIGH,openssl,3.0.20-1~deb12u2,,Python image build,2,matched to traced component,openssl: compat-openssl: openssl: Information disclosure via DTLS handshake retransmission
+CVE-2026-54872,MEDIUM,openssl,3.0.20-1~deb12u2,,Python image build,2,matched to traced component,openssl: OpenSSL: Private key recovery via timing side-channel in generic elliptic curve operations
+CVE-2026-63072,MEDIUM,openssl,3.0.20-1~deb12u2,3.0.22-1~deb12u1,Python image build,2,matched to traced component,openssl: heap buffer overflow in CMS key unwrapping
+CVE-2026-63076,MEDIUM,openssl,3.0.20-1~deb12u2,3.0.22-1~deb12u1,Python image build,2,matched to traced component,openssl: invalid pointer dereference in CMP server via crafted protectionAlg
+CVE-2026-75805,MEDIUM,openssl,3.0.20-1~deb12u2,,Python image build,2,matched to traced component,openssl: openssl: Denial of Service via crafted CMP certificate revocation response
+CVE-2026-75806,MEDIUM,openssl,3.0.20-1~deb12u2,,Python image build,2,matched to traced component,openssl: OpenSSL: Denial of Service via undersized DTLS record
+CVE-2026-77696,MEDIUM,openssl,3.0.20-1~deb12u2,,Python image build,2,matched to traced component,openssl: OpenSSL: Private key recovery via SM2 timing side-channel
+CVE-2025-27587,LOW,openssl,3.0.20-1~deb12u2,,Python image build,2,matched to traced component,OpenSSL 3.0.0 through 3.3.2 on the PowerPC architecture is vulnerable  ...
+CVE-2026-35189,LOW,openssl,3.0.20-1~deb12u2,,Python image build,2,matched to traced component,openssl: openssl: Denial of Service via excessive memory allocation in CRL distribution point processing
+CVE-2026-42767,LOW,openssl,3.0.20-1~deb12u2,3.0.22-1~deb12u1,Python image build,2,matched to traced component,openssl: NULL Pointer Dereference in CRMF EncryptedValue Decryption
+CVE-2026-54874,LOW,openssl,3.0.20-1~deb12u2,3.0.22-1~deb12u1,Python image build,2,matched to traced component,openssl: excessive memory use buffering DTLS records for a future epoch
+CVE-2026-63074,LOW,openssl,3.0.20-1~deb12u2,3.0.22-1~deb12u1,Python image build,2,matched to traced component,openssl: CMP indefinite cache growth of ExtraCerts
+CVE-2026-75803,LOW,openssl,3.0.20-1~deb12u2,3.0.22-1~deb12u1,Python image build,2,matched to traced component,openssl: openssl: AEAD forgeries possible with empty ciphertext in EVP_Cipher()
+CVE-2007-5686,LOW,passwd,1:4.13+dfsg1-1+deb12u2,,Debian 12 base,1,matched to traced component,initscripts in rPath Linux 1 sets insecure permissions for the /var/lo ...
+CVE-2024-56433,LOW,passwd,1:4.13+dfsg1-1+deb12u2,,Debian 12 base,1,matched to traced component,shadow-utils: Default subordinate ID configuration in /etc/login.defs could lead to compromise
+TEMP-0628843-DBAD28,LOW,passwd,1:4.13+dfsg1-1+deb12u2,,Debian 12 base,1,matched to traced component,[more related to CVE-2005-4890]
+CVE-2026-13221,CRITICAL,perl-base,5.36.0-7+deb12u3,,Debian 12 base,1,matched to traced component,perl: Perl: Incorrect regular expression processing via large regular expressions
+CVE-2026-42496,CRITICAL,perl-base,5.36.0-7+deb12u3,,Debian 12 base,1,matched to traced component,perl-archive-tar: perl-archive-tar: Path traversal via crafted symlinks allows arbitrary file access
+CVE-2026-8376,CRITICAL,perl-base,5.36.0-7+deb12u3,,Debian 12 base,1,matched to traced component,perl: Perl: Heap buffer overflow when compiling regular expressions on 32-bit builds
+CVE-2026-42497,HIGH,perl-base,5.36.0-7+deb12u3,,Debian 12 base,1,matched to traced component,perl-Archive-Tar: perl-Archive-Tar: Arbitrary file modification via crafted hardlinks during archive extraction
+CVE-2026-48962,HIGH,perl-base,5.36.0-7+deb12u3,,Debian 12 base,1,matched to traced component,perl-IO-Compress: perl-IO-Compress: Arbitrary code execution via attacker-controlled output glob
+CVE-2026-57432,HIGH,perl-base,5.36.0-7+deb12u3,,Debian 12 base,1,matched to traced component,perl: Perl: Information disclosure via integer overflow in pack/unpack operations
+CVE-2026-57433,HIGH,perl-base,5.36.0-7+deb12u3,,Debian 12 base,1,matched to traced component,Storable: Storable: Denial of Service via signed integer overflow in deserialization
+CVE-2026-9538,HIGH,perl-base,5.36.0-7+deb12u3,,Debian 12 base,1,matched to traced component,perl-Archive-Tar: perl-Archive-Tar: Denial of Service via crafted tar header with large entry size
+CVE-2025-15649,MEDIUM,perl-base,5.36.0-7+deb12u3,,Debian 12 base,1,matched to traced component,perl-IO-Compress: perl-IO-Compress: Denial of Service via malformed DOS date in zip header
+CVE-2026-12087,MEDIUM,perl-base,5.36.0-7+deb12u3,,Debian 12 base,1,matched to traced component,perl-Socket: perl-Socket: Information Disclosure due to Out-of-Bounds Read
+CVE-2026-15534,MEDIUM,perl-base,5.36.0-7+deb12u3,,Debian 12 base,1,matched to traced component,perl: Perl: Arbitrary code execution via out-of-bounds memory access in regular expression engine.
+CVE-2026-19487,MEDIUM,perl-base,5.36.0-7+deb12u3,,Debian 12 base,1,matched to traced component,perl: Perl: Incorrect regular expression matching can lead to wrong access or filtering decisions.
+CVE-2026-48959,MEDIUM,perl-base,5.36.0-7+deb12u3,,Debian 12 base,1,matched to traced component,perl-IO-Compress: perl-IO-Compress: CPU exhaustion via per-byte read loop in fastForward
+CVE-2026-7010,MEDIUM,perl-base,5.36.0-7+deb12u3,,Debian 12 base,1,matched to traced component,HTTP::Tiny versions before 0.093 for Perl do not validate CRLF in HTTP ...
+CVE-2026-7017,MEDIUM,perl-base,5.36.0-7+deb12u3,,Debian 12 base,1,matched to traced component,HTTP::Tiny versions before 0.095 for Perl forward credential headers t ...
+CVE-2011-4116,LOW,perl-base,5.36.0-7+deb12u3,,Debian 12 base,1,matched to traced component,perl: File:: Temp insecure temporary file handling
+CVE-2023-31486,LOW,perl-base,5.36.0-7+deb12u3,,Debian 12 base,1,matched to traced component,http-tiny: perl: insecure TLS cert default
+CVE-2026-82560,UNKNOWN,perl-base,5.36.0-7+deb12u3,,Debian 12 base,1,matched to traced component,Pod::Text versions before 6.1.1 for Perl allow CPU and memory exhausti ...
+TEMP-0517018-A83CE6,LOW,sysvinit-utils,3.06-4,,Debian 12 base,1,matched to traced component,[sysvinit: no-root option in expert installer exposes locally exploitable security flaw]
+CVE-2026-18477,MEDIUM,tar,1.34+dfsg-1.2+deb12u1,,Debian 12 base,1,matched to traced component,tar: tar: TOCTOU in incremental dumpdir 'X' rename handling allows restore path escape
+CVE-2026-18508,MEDIUM,tar,1.34+dfsg-1.2+deb12u1,,Debian 12 base,1,matched to traced component,tar: tar: --one-top-level hardlink targets not confined to top-level directory enabling arbitrary file overwrite
+CVE-2026-5704,MEDIUM,tar,1.34+dfsg-1.2+deb12u1,,Debian 12 base,1,matched to traced component,tar: tar: Hidden file injection via crafted archives
+CVE-2005-2541,LOW,tar,1.34+dfsg-1.2+deb12u1,,Debian 12 base,1,matched to traced component,tar: does not properly warn the user when extracting setuid or setgid files
+TEMP-0290435-0B57B5,LOW,tar,1.34+dfsg-1.2+deb12u1,,Debian 12 base,1,matched to traced component,[tar's rmt command may have undesired side effects]
+DLA-4792-1,UNKNOWN,tzdata,2026b-0+deb12u1,2026c-0+deb12u1,Debian 12 base,1,matched to traced component,tzdata - new timezone database
+CVE-2026-53613,HIGH,util-linux,2.38.1-5+deb12u3,,Debian 12 base,1,matched to traced component,util-linux: util-linux: TOCTOU in the mount program via ancestor directory swap on target path
+CVE-2026-76642,HIGH,util-linux,2.38.1-5+deb12u3,,Debian 12 base,1,matched to traced component,util-linux: util-linux: failed external mount helper still runs privileged X-mount post-hooks
+CVE-2026-78408,HIGH,util-linux,2.38.1-5+deb12u3,,Debian 12 base,1,matched to traced component,util-linux: util-linux: nsenter --join-cgroup leaks root cgroup migration authority
+CVE-2026-78409,HIGH,util-linux,2.38.1-5+deb12u3,,Debian 12 base,1,matched to traced component,util-linux: util-linux: X-mount.subdir detached-tree resolution can escape via intermediate symlinks
+CVE-2026-78410,HIGH,util-linux,2.38.1-5+deb12u3,,Debian 12 base,1,matched to traced component,"util-linux: util-linux: restricted bind mounts do not pin the source, allowing X-mount.owner/group/mode redirection"
+CVE-2026-13595,MEDIUM,util-linux,2.38.1-5+deb12u3,,Debian 12 base,1,matched to traced component,util-linux: util-linux: heap use-after-free in libblkid nested partition probing
+CVE-2026-27456,MEDIUM,util-linux,2.38.1-5+deb12u3,,Debian 12 base,1,matched to traced component,util-linux: TOCTOU in the mount program when setting up loop devices
+CVE-2026-3184,MEDIUM,util-linux,2.38.1-5+deb12u3,,Debian 12 base,1,matched to traced component,util-linux: util-linux: Access control bypass due to improper hostname canonicalization
+CVE-2026-53615,MEDIUM,util-linux,2.38.1-5+deb12u3,,Debian 12 base,1,matched to traced component,[Integer Overflow or Wraparound in libblkid/src/partitions/dos.c]
+CVE-2022-0563,LOW,util-linux,2.38.1-5+deb12u3,,Debian 12 base,1,matched to traced component,util-linux: partial disclosure of arbitrary files in chfn and chsh when compiled with libreadline
+CVE-2025-14104,LOW,util-linux,2.38.1-5+deb12u3,,Debian 12 base,1,matched to traced component,util-linux: util-linux: Heap buffer overread in setpwnam() when processing 256-byte usernames
+CVE-2026-53613,HIGH,util-linux-extra,2.38.1-5+deb12u3,,Debian 12 base,1,matched to traced component,util-linux: util-linux: TOCTOU in the mount program via ancestor directory swap on target path
+CVE-2026-76642,HIGH,util-linux-extra,2.38.1-5+deb12u3,,Debian 12 base,1,matched to traced component,util-linux: util-linux: failed external mount helper still runs privileged X-mount post-hooks
+CVE-2026-78408,HIGH,util-linux-extra,2.38.1-5+deb12u3,,Debian 12 base,1,matched to traced component,util-linux: util-linux: nsenter --join-cgroup leaks root cgroup migration authority
+CVE-2026-78409,HIGH,util-linux-extra,2.38.1-5+deb12u3,,Debian 12 base,1,matched to traced component,util-linux: util-linux: X-mount.subdir detached-tree resolution can escape via intermediate symlinks
+CVE-2026-78410,HIGH,util-linux-extra,2.38.1-5+deb12u3,,Debian 12 base,1,matched to traced component,"util-linux: util-linux: restricted bind mounts do not pin the source, allowing X-mount.owner/group/mode redirection"
+CVE-2026-13595,MEDIUM,util-linux-extra,2.38.1-5+deb12u3,,Debian 12 base,1,matched to traced component,util-linux: util-linux: heap use-after-free in libblkid nested partition probing
+CVE-2026-27456,MEDIUM,util-linux-extra,2.38.1-5+deb12u3,,Debian 12 base,1,matched to traced component,util-linux: TOCTOU in the mount program when setting up loop devices
+CVE-2026-3184,MEDIUM,util-linux-extra,2.38.1-5+deb12u3,,Debian 12 base,1,matched to traced component,util-linux: util-linux: Access control bypass due to improper hostname canonicalization
+CVE-2026-53615,MEDIUM,util-linux-extra,2.38.1-5+deb12u3,,Debian 12 base,1,matched to traced component,[Integer Overflow or Wraparound in libblkid/src/partitions/dos.c]
+CVE-2022-0563,LOW,util-linux-extra,2.38.1-5+deb12u3,,Debian 12 base,1,matched to traced component,util-linux: partial disclosure of arbitrary files in chfn and chsh when compiled with libreadline
+CVE-2025-14104,LOW,util-linux-extra,2.38.1-5+deb12u3,,Debian 12 base,1,matched to traced component,util-linux: util-linux: Heap buffer overread in setpwnam() when processing 256-byte usernames
+CVE-2023-45853,CRITICAL,zlib1g,1:1.2.13.dfsg-1,,Debian 12 base,1,matched to traced component,zlib: integer overflow and resultant heap-based buffer overflow in zipOpenNewFileInZip4_6
+CVE-2026-27171,MEDIUM,zlib1g,1:1.2.13.dfsg-1,,Debian 12 base,1,matched to traced component,zlib: zlib: Denial of Service via infinite loop in CRC32 combine functions
+CVE-2026-85091,MEDIUM,zlib1g,1:1.2.13.dfsg-1,,Debian 12 base,1,matched to traced component,zlib versions 1.3.1.2 through 1.3.2 contain a heap buffer overflow vul ...
+CVE-2025-8869,MEDIUM,pip,25.0.1,25.3,Python image build,3,matched to traced component,pip: pip missing checks on symbolic link extraction
+CVE-2026-13346,MEDIUM,pip,25.0.1,26.2.0,Python image build,3,matched to traced component,pip: pip: Arbitrary file installation via malicious package indexes
+CVE-2026-3219,MEDIUM,pip,25.0.1,26.1,Python image build,3,matched to traced component,pip: pip: Incorrect file installation due to improper archive handling
+CVE-2026-6357,MEDIUM,pip,25.0.1,26.1,Python image build,3,matched to traced component,pip: pip: Arbitrary code execution or information disclosure via malicious wheel package installation
+CVE-2026-8643,MEDIUM,pip,25.0.1,26.1.2,Python image build,3,matched to traced component,python-pip: Path traversal via malicious entry point name in pip wheel installation allows arbitrary file overwrite
+CVE-2026-1703,LOW,pip,25.0.1,26.0,Python image build,3,matched to traced component,pip: pip: Information disclosure via path traversal when installing crafted wheel archives
