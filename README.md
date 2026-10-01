@@ -42,11 +42,36 @@ If the application build upgrades a base package (for example `dnf update openss
 Requires Python 3.9 or newer. The tool uses **only the standard library**, so it has no dependencies to vet and works
 on air-gapped or locked-down hosts. Docker is **not** required.
 
+**From a release (recommended).** Download the wheel from the
+[Releases](../../releases) page, verify it (see below), then:
+
 ```bash
-pip install .            # provides the `wimi` command
-# or, without installing:
-python3 -m whats_in_my_image --help
+pip install whats_in_my_image-0.1.0-py3-none-any.whl     # provides the `wimi` command
 ```
+
+**As a container** (built on Red Hat UBI 9, runs as a non-root user):
+
+```bash
+docker run --rm ghcr.io/<owner>/<repo>:0.1.0 registry.example.mil/team/app:1.2 --base <base image> -o /out
+```
+
+Mount a directory at `/out` (for example `-v "$PWD/reports:/out"`) to keep the report.
+
+**From source:** `pip install .` or run without installing: `python3 -m whats_in_my_image --help`.
+
+### Verifying a release
+
+Every release is built by GitHub Actions and ships with signed build provenance (SLSA), CycloneDX SBOMs for the
+wheel and the image, a cosign signature on the image, and a `SHA256SUMS` file. The exact verification commands,
+filled in for that release, are in each release's notes. In general:
+
+```bash
+gh attestation verify whats_in_my_image-0.1.0-py3-none-any.whl --repo <owner>/<repo>
+gh attestation verify oci://ghcr.io/<owner>/<repo>:0.1.0 --repo <owner>/<repo>
+sha256sum --check SHA256SUMS
+```
+
+Each release also includes a `wimi` provenance report of its own container image.
 
 ## Usage
 
@@ -149,3 +174,12 @@ bandit -c pyproject.toml -r whats_in_my_image
 GitHub Actions runs these on every push and pull request, along with tests on Python 3.9 to 3.14, CodeQL,
 Trivy, Gitleaks, workflow security checks and OpenSSF Scorecard. Findings appear under the repository's
 **Security → Code scanning** tab. See [SECURITY.md](SECURITY.md) for details and for how to report a vulnerability.
+
+### Cutting a release
+
+1. Update the version in `pyproject.toml` and `whats_in_my_image/__init__.py`, and add a section to `CHANGELOG.md`.
+2. Optionally refresh the base image digest in the `Dockerfile`.
+3. Commit, then tag and push: `git tag -a v0.2.0 -m "v0.2.0" && git push origin v0.2.0`.
+
+The Release workflow refuses to publish if the tag does not match the package version, or if the image has a
+critical vulnerability with a fix available.
