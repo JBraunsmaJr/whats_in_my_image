@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import math
 from collections import Counter
 from html import escape
 
@@ -66,6 +67,77 @@ def _stacked(segments: list[tuple[str, int, str]], total: int, unit: str) -> str
             f'aria-label="{e(tip)}"></div>'
         )
     return f'<div class="bar" role="img">{"".join(parts)}</div>'
+
+
+def _layer_cake(m: dict, colors: dict[str, str], olabel: dict[str, str]) -> str:
+    """Draw the image as a cake: first layer at the bottom, each slice coloured by who added it."""
+    layers = m["layers"]
+    if not layers:
+        return ""
+    vulns = m["vulns"]
+    total_v, serious_v = Counter(), Counter()
+    for v in vulns or []:
+        if v["layer"] is not None:
+            total_v[v["layer"]] += 1
+            if v["severity"] in ("CRITICAL", "HIGH"):
+                serious_v[v["layer"]] += 1
+    biggest = max(lyr["size"] for lyr in layers) or 1
+    origins = {o["key"]: o for o in m["origins"]}
+    proof = {
+        "exact layer-digest match": "proven by digest",
+        "partial layer-digest match": "partly proven by digest",
+        "estimated from build timestamps": "estimated",
+    }
+
+    groups: list[tuple[str, list[dict]]] = []  # runs of consecutive layers with the same origin, bottom-up
+    for lyr in layers:
+        if groups and groups[-1][0] == lyr["origin"]:
+            groups[-1][1].append(lyr)
+        else:
+            groups.append((lyr["origin"], [lyr]))
+
+    parts = []
+    for gi in range(len(groups) - 1, -1, -1):  # top tier first
+        okey, group = groups[gi]
+        color = colors.get(okey, "var(--muted)")
+        nums = [lyr["number"] for lyr in group]
+        span = f"Layer {nums[0]}" if len(nums) == 1 else f"Layers {nums[0]}–{nums[-1]}"
+        how = proof.get(origins.get(okey, {}).get("match", ""), "")
+        slices = []
+        for lyr in reversed(group):
+            # Thickness grows with the log of the layer size so a 249-byte layer and a 300 MB layer both read.
+            height = 2.6 + 2.4 * math.log1p(lyr["size"]) / math.log1p(biggest)
+            meta = [lyr["size_h"], f"{lyr['components']:,} component{'' if lyr['components'] == 1 else 's'}"]
+            if vulns is not None:
+                n, sv = total_v[lyr["index"]], serious_v[lyr["index"]]
+                meta.append(
+                    f"{n:,} vulnerabilit{'y' if n == 1 else 'ies'}" + (f" ({sv:,} critical/high)" if sv else "")
+                )
+            tip = f"Step {lyr['number']}: {lyr['summary']}"
+            label = f"Layer {lyr['number']}, {olabel.get(okey, okey)}: {lyr['content_summary']}. {', '.join(meta)}"
+            slices.append(
+                f'<a class="slice" href="#step-{lyr["number"]}" style="--oc:{color};min-height:{height:.2f}rem" '
+                f'data-tip="{e(tip)}" aria-label="{e(label)}"><span class="slice-n">{lyr["number"]}</span>'
+                f'<span class="slice-body"><span class="slice-sum">{e(lyr["content_summary"])}</span>'
+                f'<span class="slice-meta">{e(" · ".join(meta))}</span></span></a>'
+            )
+        parts.append(
+            f'<div class="tier"><div class="tier-label">{_badge(olabel.get(okey, okey), color)}'
+            f'<span class="small muted">{e(span)}{" · " + e(how) if how else ""}</span></div>'
+            f'<div class="slices">{"".join(slices)}</div></div>'
+        )
+        if gi > 0:
+            below = olabel.get(groups[gi - 1][0], groups[gi - 1][0])
+            parts.append(
+                f'<div class="seam"><span>{e(below)} ends here. Everything above was added on top of it.</span></div>'
+            )
+    parts.append('<div class="stand"><span>Empty filesystem: the build starts here</span></div>')
+    return (
+        '<div class="card"><h3>The image as a layer cake</h3>'
+        '<p class="sub">Read it from the bottom up, in the order it was built. Each slice is one layer, coloured by who '
+        "added it; thicker slices are larger layers. Select a slice to see that build step.</p>"
+        f'<div class="cake">{"".join(parts)}</div></div>'
+    )
 
 
 def render(m: dict) -> str:
@@ -214,6 +286,8 @@ def render(m: dict) -> str:
             + "</div>"
         )
 
+    cake = _layer_cake(m, colors, olabel)
+
     # ---------------------------------------------------------------- build timeline
     steps = []
     for lyr in m["layers"]:
@@ -224,7 +298,7 @@ def render(m: dict) -> str:
         )
         urls = "".join(f"<li class='mono'>{e(u)}</li>" for u in lyr["urls"])
         steps.append(f"""
-<li class="step" style="--oc:{colors.get(lyr["origin"], "var(--muted)")}">
+<li class="step" id="step-{lyr["number"]}" style="--oc:{colors.get(lyr["origin"], "var(--muted)")}">
   <div class="step-n">{lyr["number"]}</div>
   <div class="step-body">
     <div class="step-top">{_badge(lyr["origin_label"], colors.get(lyr["origin"], "var(--muted)"))}
@@ -381,8 +455,9 @@ def render(m: dict) -> str:
 </section>
 
 <section id="composition"><h2><span class="num-h">2</span>Where the contents came from</h2>
-  <p class="lead">An image is built in layers, like a stack of transparencies. The lower layers come from the base image,
-  and the upper layers are added by the application team's build. Each layer below is attributed to whoever produced it.</p>
+  <p class="lead">An image is built in layers, like a cake. The bottom tiers come from the base image, and the tiers on
+  top are added by the application team's build. Each layer is attributed to whoever produced it.</p>
+  {cake}
   <div class="ocards">{"".join(origin_cards)}</div>
   <div class="grid2">
   <div class="card"><h3>Share of components</h3><div class="legend">{legend}</div>{comp_bar}
@@ -517,6 +592,23 @@ h3{font-size:1rem;margin:0 0 10px}
 .ocard p{margin:8px 0 0;color:var(--ink-2);font-size:.9rem}.ocard .note{color:var(--ink)}
 .ocard-h{display:flex;justify-content:space-between;gap:8px;flex-wrap:wrap;align-items:center}
 .timeline{list-style:none;padding:0;margin:0}
+.cake{display:grid;max-width:900px;margin:4px auto 0}
+.tier{display:grid;grid-template-columns:minmax(120px,200px) minmax(0,1fr);gap:16px;align-items:center;padding:4px 0}
+.tier-label{display:flex;flex-direction:column;align-items:flex-start;gap:4px}
+.slices{display:flex;flex-direction:column;gap:3px;min-width:0}
+.slice{display:flex;align-items:center;gap:12px;padding:6px 14px;border-radius:6px;text-decoration:none;color:var(--ink);
+background:var(--surface-2);background:color-mix(in srgb,var(--oc) 15%,var(--surface));border-top:4px solid var(--oc);
+-webkit-print-color-adjust:exact;print-color-adjust:exact}
+.slice:hover{background:color-mix(in srgb,var(--oc) 26%,var(--surface))}
+.slice:focus-visible{outline:2px solid var(--ink);outline-offset:2px}
+.slice-n{flex:none;width:26px;height:26px;border-radius:50%;background:var(--oc);color:#fff;display:grid;place-items:center;font-weight:650;font-size:.8rem}
+.slice-body{display:flex;flex-direction:column;min-width:0}
+.slice-sum{font-weight:600;font-size:.9rem}
+.slice-meta{font-size:.78rem;color:var(--ink-2);font-variant-numeric:tabular-nums}
+.seam{display:flex;align-items:center;gap:10px;margin:10px 0;color:var(--ink-2);font-size:.8rem;text-align:center}
+.seam:before,.seam:after{content:"";flex:1;min-width:16px;border-top:2px dashed var(--gridline-strong)}
+.stand{margin:6px -10px 0;border-top:6px solid var(--gridline-strong);border-radius:3px;text-align:center;padding-top:6px;font-size:.78rem;color:var(--muted)}
+.step{scroll-margin-top:16px}
 .step{display:grid;grid-template-columns:40px 1fr;gap:12px;position:relative;padding-bottom:12px}
 .step:before{content:"";position:absolute;left:19px;top:34px;bottom:0;width:2px;background:var(--gridline)}
 .step:last-child:before{display:none}
@@ -554,7 +646,7 @@ td.num,th.num{text-align:right;font-variant-numeric:tabular-nums}
 footer{padding:24px 16px 40px}
 #tip{position:fixed;pointer-events:none;background:var(--ink);color:var(--page);font-size:.8rem;padding:4px 8px;border-radius:6px;opacity:0;transition:opacity .1s;z-index:10;max-width:280px}
 [hidden]{display:none!important}
-@media (max-width:640px){.kv{grid-template-columns:1fr}.vrow{grid-template-columns:70px 1fr}}
+@media (max-width:640px){.tier{grid-template-columns:minmax(0,1fr);gap:6px}.stand{margin-inline:0}.kv{grid-template-columns:1fr}.vrow{grid-template-columns:70px 1fr}}
 @media print{body{background:#fff;font-size:11px}.hero{background:#fff;color:#000;--hero-ink:#000}.toc,.controls,#tip{display:none}
 details{display:block}details>*{display:block}section{break-inside:auto}.finding,.step,.tk,.card{break-inside:avoid}
 .tablewrap{overflow:visible}table.data thead th{position:static}}

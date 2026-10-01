@@ -263,6 +263,12 @@ class EndToEnd(unittest.TestCase):
         self.assertTrue(any("introduced after" in t["text"] for t in m["takeaways"]))
         html = next((self.tmp / "out").glob("*.html")).read_text()
         self.assertIn("CVE-2", html)
+        # layer cake: one slice per layer, each linked to its build step, with the base seam marked
+        self.assertEqual(html.count('class="slice"'), 3)
+        for n in (1, 2, 3):
+            self.assertIn(f'href="#step-{n}"', html)
+            self.assertIn(f'id="step-{n}"', html)
+        self.assertIn("Iron Bank Debian ends here", html)
 
     def test_mismatched_base_is_reported(self):
         other = write_oci(self.tmp / "other", [make_layer({"x": b"y"})], ["ADD x /"])

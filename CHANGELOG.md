@@ -3,6 +3,13 @@
 All notable changes to this project are documented here. The format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and versions follow [Semantic Versioning](https://semver.org/).
 
+## [Unreleased]
+
+### Added
+
+- "Layer cake" view in the HTML report: the image drawn as stacked slices, bottom-up in build order, coloured by
+  who added each layer, sized by layer size, with the end of the base image marked. Each slice links to its build step.
+
 ## [0.1.0] - 2026-10-01
 
 First public release.
