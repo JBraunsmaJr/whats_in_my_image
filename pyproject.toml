@@ -18,3 +18,19 @@ wimi = "whats_in_my_image.cli:main"
 
 [tool.setuptools.packages.find]
 include = ["whats_in_my_image*"]
+
+[tool.ruff]
+target-version = "py39"
+line-length = 120
+
+[tool.ruff.lint]
+select = ["E", "F", "W", "B", "UP", "I"]
+
+[tool.ruff.lint.per-file-ignores]
+# HTML/CSS template strings; wrapping them would hurt readability
+"whats_in_my_image/html_report.py" = ["E501"]
+
+[tool.bandit]
+exclude_dirs = ["tests"]
+# Importing subprocess is not itself a risk; each call site is reviewed and annotated instead.
+skips = ["B404"]

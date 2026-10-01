@@ -61,14 +61,18 @@ def _decompress(f: BinaryIO) -> BinaryIO:
     if head == b"\x28\xb5\x2f\xfd":
         try:
             from compression import zstd  # Python 3.14+
+
             return zstd.ZstdFile(f)
         except ImportError:
             pass
         try:
             import zstandard
+
             return zstandard.ZstdDecompressor().stream_reader(f)
         except ImportError:
-            raise SourceError("This image uses zstd-compressed layers. Use Python 3.14+ or `pip install zstandard`.")
+            raise SourceError(
+                "This image uses zstd-compressed layers. Use Python 3.14+ or `pip install zstandard`."
+            ) from None
     return contextlib.nullcontext(f)  # type: ignore[return-value]
 
 
@@ -96,7 +100,7 @@ class Image:
 
     @property
     def diff_ids(self) -> list[str]:
-        return list((self.config.get("rootfs") or {}).get("diff_ids") or [l.diff_id for l in self.layers])
+        return list((self.config.get("rootfs") or {}).get("diff_ids") or [lyr.diff_id for lyr in self.layers])
 
     @property
     def created(self) -> str:
@@ -123,6 +127,7 @@ class Image:
     def write_docker_archive(self, path: Path) -> Path:
         """Write a `docker save`-style archive (used to hand the image to Trivy/Grype)."""
         with tarfile.open(path, "w") as tf:
+
             def add(name: str, f: BinaryIO, size: int) -> None:
                 ti = tarfile.TarInfo(name)
                 ti.size = size
@@ -145,6 +150,7 @@ class Image:
 
 
 # --------------------------------------------------------------------------- archives / layouts
+
 
 class _TarStore:
     def __init__(self, path: Path):
@@ -208,11 +214,27 @@ def _load_from_store(store, name: str, source: str, platform: str) -> Image:
             doc = json.loads(store.read(_blob_path(digest)))
         config_raw = store.read(_blob_path(doc["config"]["digest"]))
         diff_ids = json.loads(config_raw)["rootfs"]["diff_ids"]
-        layers = [Layer(i, diff_ids[i], d["digest"], d.get("size", 0), d.get("mediaType", ""),
-                        partial(store.open, _blob_path(d["digest"]))) for i, d in enumerate(doc["layers"])]
+        layers = [
+            Layer(
+                i,
+                diff_ids[i],
+                d["digest"],
+                d.get("size", 0),
+                d.get("mediaType", ""),
+                partial(store.open, _blob_path(d["digest"])),
+            )
+            for i, d in enumerate(doc["layers"])
+        ]
         ref_name = ann.get("io.containerd.image.name") or ann.get("org.opencontainers.image.ref.name") or name
-        return Image(ref_name, source, config_raw, layers, manifest_digest=digest,
-                     annotations=doc.get("annotations") or {}, platform=platform)
+        return Image(
+            ref_name,
+            source,
+            config_raw,
+            layers,
+            manifest_digest=digest,
+            annotations=doc.get("annotations") or {},
+            platform=platform,
+        )
     raise SourceError(f"{name} is not a docker-archive or OCI image layout")
 
 
@@ -242,14 +264,16 @@ def load_daemon(name: str, tool: str | None, platform: str, cache_dir: Path, log
     out = cache_dir / "daemon-export" / (name.replace("/", "_").replace(":", "_") + ".tar")
     out.parent.mkdir(parents=True, exist_ok=True)
     log(f"Exporting {name} from local {tool} ...")
-    res = subprocess.run([tool, "save", "-o", str(out), name], capture_output=True, text=True)
+    # fixed argv, no shell; "--" stops an image name beginning with "-" being read as an option
+    res = subprocess.run([tool, "save", "-o", str(out), "--", name], capture_output=True, text=True)  # nosec B603
     if res.returncode != 0:
         raise SourceError(f"`{tool} save {name}` failed: {res.stderr.strip()}")
     return load_archive(out, platform, cache_dir, display_name=name)
 
 
-def load_registry(spec: str, platform: str, cache_dir: Path, *, fetch_layers: bool = True, log=print,
-                  **client_opts) -> Image:
+def load_registry(
+    spec: str, platform: str, cache_dir: Path, *, fetch_layers: bool = True, log=print, **client_opts
+) -> Image:
     ref = parse_ref(spec)
     client = RegistryClient(ref, **client_opts)
     log(f"Resolving {ref} ...")
@@ -264,17 +288,30 @@ def load_registry(spec: str, platform: str, cache_dir: Path, *, fetch_layers: bo
         dest = cache_dir / "blobs" / d["digest"].replace(":", "_")
         if fetch_layers:
             size = d.get("size", 0)
-            log(f"  layer {i + 1}/{total}  {human_size(size):>9}  {d['digest'][:19]}"
-                + ("  (cached)" if dest.exists() else ""))
+            log(
+                f"  layer {i + 1}/{total}  {human_size(size):>9}  {d['digest'][:19]}"
+                + ("  (cached)" if dest.exists() else "")
+            )
             client.fetch_blob(d["digest"], dest)
-        layers.append(Layer(i, diff_ids[i], d["digest"], d.get("size", 0), d.get("mediaType", ""),
-                            partial(open, dest, "rb")))
-    return Image(str(ref), "registry", config_raw, layers, manifest_digest=digest, index_digest=index_digest,
-                 annotations=manifest.get("annotations") or {}, platform=platform, registry_client=client)
+        layers.append(
+            Layer(i, diff_ids[i], d["digest"], d.get("size", 0), d.get("mediaType", ""), partial(open, dest, "rb"))
+        )
+    return Image(
+        str(ref),
+        "registry",
+        config_raw,
+        layers,
+        manifest_digest=digest,
+        index_digest=index_digest,
+        annotations=manifest.get("annotations") or {},
+        platform=platform,
+        registry_client=client,
+    )
 
 
-def load_image(spec: str, *, platform: str = "linux/amd64", cache_dir: Path, fetch_layers: bool = True,
-               log=print, **client_opts) -> Image:
+def load_image(
+    spec: str, *, platform: str = "linux/amd64", cache_dir: Path, fetch_layers: bool = True, log=print, **client_opts
+) -> Image:
     """Load from any supported source.
 
     ``docker-archive:FILE`` / ``oci-archive:FILE`` / a ``.tar`` path  - saved archive
@@ -284,12 +321,12 @@ def load_image(spec: str, *, platform: str = "linux/amd64", cache_dir: Path, fet
     """
     for prefix in ("docker-archive:", "oci-archive:"):
         if spec.startswith(prefix):
-            return load_archive(Path(spec[len(prefix):]), platform, cache_dir)
+            return load_archive(Path(spec[len(prefix) :]), platform, cache_dir)
     if spec.startswith("oci:"):
         return load_oci_dir(Path(spec[4:]), platform)
     for tool in ("docker", "podman"):
         if spec.startswith(tool + ":") and not spec.startswith(tool + "://"):
-            return load_daemon(spec[len(tool) + 1:], tool, platform, cache_dir, log)
+            return load_daemon(spec[len(tool) + 1 :], tool, platform, cache_dir, log)
     p = Path(spec)
     if p.exists():
         return load_archive(p, platform, cache_dir) if p.is_file() else load_oci_dir(p, platform)

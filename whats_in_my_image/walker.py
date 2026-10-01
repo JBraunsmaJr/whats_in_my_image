@@ -22,15 +22,20 @@ MAX_BINARY_SCAN = 768 << 20
 MAX_CAPTURE = 256 << 20
 
 RPMDB_FILES = {
-    "var/lib/rpm/rpmdb.sqlite", "var/lib/rpm/rpmdb.sqlite-wal", "var/lib/rpm/Packages",
-    "usr/lib/sysimage/rpm/rpmdb.sqlite", "usr/lib/sysimage/rpm/rpmdb.sqlite-wal", "usr/lib/sysimage/rpm/Packages",
+    "var/lib/rpm/rpmdb.sqlite",
+    "var/lib/rpm/rpmdb.sqlite-wal",
+    "var/lib/rpm/Packages",
+    "usr/lib/sysimage/rpm/rpmdb.sqlite",
+    "usr/lib/sysimage/rpm/rpmdb.sqlite-wal",
+    "usr/lib/sysimage/rpm/Packages",
 }
 DNF_HISTORY = {"var/lib/dnf/history.sqlite", "var/lib/dnf/history.sqlite-wal"}
-OS_RELEASE = {"etc/os-release", "usr/lib/os-release", "etc/redhat-release", "etc/alpine-release",
-              "etc/debian_version"}
-PY_META = re.compile(r"(^|/)(site|dist)-packages/[^/]+\.(dist-info|egg-info)/"
-                     r"(METADATA|PKG-INFO|RECORD|INSTALLER|direct_url\.json)$"
-                     r"|(^|/)(site|dist)-packages/[^/]+\.egg-info$")
+OS_RELEASE = {"etc/os-release", "usr/lib/os-release", "etc/redhat-release", "etc/alpine-release", "etc/debian_version"}
+PY_META = re.compile(
+    r"(^|/)(site|dist)-packages/[^/]+\.(dist-info|egg-info)/"
+    r"(METADATA|PKG-INFO|RECORD|INSTALLER|direct_url\.json)$"
+    r"|(^|/)(site|dist)-packages/[^/]+\.egg-info$"
+)
 NPM_META = re.compile(r"(^|/)node_modules/(@[^/]+/)?[^/]+/package\.json$")
 JAVA_EXT = (".jar", ".war", ".ear", ".hpi", ".jpi")
 
@@ -145,12 +150,17 @@ class Walker:
                 if base.startswith(".wh."):
                     ls.deleted += self._delete(posixpath.join(parent, base[4:]), idx)
                     continue
-                kind = ("d" if m.isdir() else "l" if m.issym() else "h" if m.islnk()
-                        else "f" if m.isreg() else "o")
+                kind = "d" if m.isdir() else "l" if m.issym() else "h" if m.islnk() else "f" if m.isreg() else "o"
                 prev = self.files.get(path)
-                rec = FileRec(path, idx, m.size if kind == "f" else 0, kind, m.mode,
-                              _norm(m.linkname) if kind == "h" else m.linkname,
-                              prev_layer=prev.layer if prev and prev.kind != "d" else None)
+                rec = FileRec(
+                    path,
+                    idx,
+                    m.size if kind == "f" else 0,
+                    kind,
+                    m.mode,
+                    _norm(m.linkname) if kind == "h" else m.linkname,
+                    prev_layer=prev.layer if prev and prev.kind != "d" else None,
+                )
                 if kind == "f":
                     ls.bytes_written += m.size
                     self._inspect(ls, rec, tf.extractfile(m), m.size)
@@ -226,7 +236,7 @@ class Walker:
             if rec is not None and rec.kind == "l" and depth < 16:
                 tgt = rec.link
                 joined = tgt.lstrip("/") if tgt.startswith("/") else posixpath.join(posixpath.dirname(cur), tgt)
-                newp = posixpath.normpath("/".join([joined] + parts[i + 1:])).lstrip("/")
+                newp = posixpath.normpath("/".join([joined] + parts[i + 1 :])).lstrip("/")
                 result = self._resolve_dir(newp, depth + 1) if newp not in (".", "") else ""
                 self._dir_cache[d] = result
                 return result

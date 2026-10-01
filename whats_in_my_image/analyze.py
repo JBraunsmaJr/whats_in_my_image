@@ -65,6 +65,7 @@ class Component:
 
 # --------------------------------------------------------------------------- origins
 
+
 def base_label(ref: str) -> str:
     low = ref.lower()
     if "registry1.dso.mil" in low or "/ironbank/" in low or low.startswith("ironbank/"):
@@ -73,8 +74,9 @@ def base_label(ref: str) -> str:
     return f"Base image: {ref}"
 
 
-def compute_origins(diff_ids: list[str], bases: list[dict], history: list[dict], labels: dict,
-                    app_name: str) -> tuple[list[Origin], list[str], list[str]]:
+def compute_origins(
+    diff_ids: list[str], bases: list[dict], history: list[dict], labels: dict, app_name: str
+) -> tuple[list[Origin], list[str], list[str]]:
     """Return (origins, origin key per layer, notes).
 
     ``bases`` entries: {"ref", "label", "diff_ids"}. Attribution is by exact layer-digest match:
@@ -94,13 +96,17 @@ def compute_origins(diff_ids: list[str], bases: list[dict], history: list[dict],
             prefix += 1
         b = {**b, "prefix": prefix}
         if prefix == 0:
-            notes.append(f"The image was NOT built on {b['ref']}: none of its {len(b['diff_ids'])} layers match. "
-                         "It was probably built from a different version or tag of that base.")
+            notes.append(
+                f"The image was NOT built on {b['ref']}: none of its {len(b['diff_ids'])} layers match. "
+                "It was probably built from a different version or tag of that base."
+            )
             continue
         if prefix < len(b["diff_ids"]):
             b["partial"] = True
-            notes.append(f"Only the first {prefix} of {len(b['diff_ids'])} layers of {b['ref']} match. The image was "
-                         "built from a different version (tag) of this base that shares older layers with it.")
+            notes.append(
+                f"Only the first {prefix} of {len(b['diff_ids'])} layers of {b['ref']} match. The image was "
+                "built from a different version (tag) of this base that shares older layers with it."
+            )
         matched.append(b)
     matched.sort(key=lambda b: b["prefix"])
     start = 0
@@ -108,9 +114,14 @@ def compute_origins(diff_ids: list[str], bases: list[dict], history: list[dict],
         end = b["prefix"]
         if end <= start:
             continue
-        o = Origin(f"base{i}", b["label"], "base", b["ref"],
-                   "partial layer-digest match" if b.get("partial") else "exact layer-digest match",
-                   list(range(start, end)))
+        o = Origin(
+            f"base{i}",
+            b["label"],
+            "base",
+            b["ref"],
+            "partial layer-digest match" if b.get("partial") else "exact layer-digest match",
+            list(range(start, end)),
+        )
         if b.get("partial"):
             o.note = "Built on a different version of this base; only shared layers are attributed to it."
         origins.append(o)
@@ -120,22 +131,36 @@ def compute_origins(diff_ids: list[str], bases: list[dict], history: list[dict],
 
     if not matched:
         est = _estimate_boundary(history)
-        ironbank = any(k.startswith(("mil.dso.ironbank", "io.dso.")) for k in labels) or \
-            "ironbank" in labels.get("org.opencontainers.image.vendor", "").lower()
+        ironbank = (
+            any(k.startswith(("mil.dso.ironbank", "io.dso.")) for k in labels)
+            or "ironbank" in labels.get("org.opencontainers.image.vendor", "").lower()
+        )
         if est:
             label = "Iron Bank base (estimated)" if ironbank else "Base image (estimated)"
-            origins.append(Origin("base0", label, "base", labels.get("org.opencontainers.image.base.name", ""),
-                                  "estimated from build timestamps", list(range(est)),
-                                  "Estimated: re-run with --base <exact base image> for a definitive answer."))
+            origins.append(
+                Origin(
+                    "base0",
+                    label,
+                    "base",
+                    labels.get("org.opencontainers.image.base.name", ""),
+                    "estimated from build timestamps",
+                    list(range(est)),
+                    "Estimated: re-run with --base <exact base image> for a definitive answer.",
+                )
+            )
             for li in range(est):
                 per_layer[li] = "base0"
             start = est
             span = "layer 1 looks" if est == 1 else f"layers 1-{est} look"
-            notes.append(f"No matching base image was available, so the base/application boundary was estimated "
-                         f"from build timestamps ({span} like the base). Use --base for proof by layer digest.")
+            notes.append(
+                f"No matching base image was available, so the base/application boundary was estimated "
+                f"from build timestamps ({span} like the base). Use --base for proof by layer digest."
+            )
         else:
-            notes.append("No matching base image was available and the boundary could not be estimated. "
-                         "Re-run with --base <the Iron Bank image you build FROM> for an exact attribution.")
+            notes.append(
+                "No matching base image was available and the boundary could not be estimated. "
+                "Re-run with --base <the Iron Bank image you build FROM> for an exact attribution."
+            )
             origins.append(Origin("unknown", "Unattributed layers", "unknown", "", "none", list(range(n))))
             return origins, ["unknown"] * n, notes
     if start < n:
@@ -168,6 +193,7 @@ def _estimate_boundary(history: list[dict]) -> int:
 
 # --------------------------------------------------------------------------- package tracking
 
+
 def _track(snapshots: list[tuple[int, list]], key_of, version_of):
     """Follow each package through successive package-database snapshots."""
     prev: dict = {}
@@ -181,13 +207,24 @@ def _track(snapshots: list[tuple[int, list]], key_of, version_of):
             versions = sorted(version_of(p) for p in plist)
             old = prev.get(k)
             if old is None:
-                new[k] = {"pkgs": plist, "versions": versions, "introduced": layer, "layer": layer,
-                          "change": "added", "prev": ""}
+                new[k] = {
+                    "pkgs": plist,
+                    "versions": versions,
+                    "introduced": layer,
+                    "layer": layer,
+                    "change": "added",
+                    "prev": "",
+                }
             elif old["versions"] != versions:
                 cmp = suppliers.compare_versions(versions[-1], old["versions"][-1])
-                new[k] = {"pkgs": plist, "versions": versions, "introduced": old["introduced"], "layer": layer,
-                          "change": "upgraded" if cmp > 0 else "downgraded" if cmp < 0 else "changed",
-                          "prev": ", ".join(old["versions"])}
+                new[k] = {
+                    "pkgs": plist,
+                    "versions": versions,
+                    "introduced": old["introduced"],
+                    "layer": layer,
+                    "change": "upgraded" if cmp > 0 else "downgraded" if cmp < 0 else "changed",
+                    "prev": ", ".join(old["versions"]),
+                }
             else:
                 new[k] = {**old, "pkgs": plist}
         for k in set(prev) - set(new):
@@ -263,10 +300,12 @@ class Analyzer:
         if not snaps:
             return
         if last_db_path and last_db_path not in self.w.files:
-            self.notes.append("The RPM package database was deleted from the final image. The OS package list "
-                              "below is the last one recorded before deletion and may be incomplete.")
+            self.notes.append(
+                "The RPM package database was deleted from the final image. The OS package list "
+                "below is the last one recorded before deletion and may be incomplete."
+            )
         final, removed = _track(snaps, lambda p: (p.name, p.arch), lambda p: p.evr)
-        self.removed_packages += [{"layer": l, "name": n, "version": v, "ecosystem": "rpm"} for l, n, v in removed]
+        self.removed_packages += [{"layer": lyr, "name": n, "version": v, "ecosystem": "rpm"} for lyr, n, v in removed]
 
         for st in final.values():  # keys imported into the image: gpg-pubkey-<shortid>-<date>
             for p in st["pkgs"]:
@@ -288,11 +327,19 @@ class Analyzer:
             for p in st["pkgs"]:
                 if p.name == "gpg-pubkey":
                     continue
-                c = Component(self._id("rpm", p.name, p.evr), p.name, p.evr, "rpm",
-                              suppliers.rpm_vendor_label(p.vendor), layer=st["layer"],
-                              introduced_layer=st["introduced"], change=st["change"],
-                              previous_version=st["prev"], license=p.license,
-                              purl=f"pkg:rpm/{p.name}@{p.evr}?arch={p.arch}")
+                c = Component(
+                    self._id("rpm", p.name, p.evr),
+                    p.name,
+                    p.evr,
+                    "rpm",
+                    suppliers.rpm_vendor_label(p.vendor),
+                    layer=st["layer"],
+                    introduced_layer=st["introduced"],
+                    change=st["change"],
+                    previous_version=st["prev"],
+                    license=p.license,
+                    purl=f"pkg:rpm/{p.name}@{p.evr}?arch={p.arch}",
+                )
                 repo = repos.get((p.name, f"{p.version}-{p.release}", p.arch), "")
                 c.source = suppliers.rpm_repo_label(repo) if repo else ""
                 if p.vendor:
@@ -305,18 +352,29 @@ class Analyzer:
                     c.evidence.append(f"Installed from repository: {repo}")
                 key_label = self._key_label(p.sig_key_id)
                 if p.sig_key_id:
-                    c.evidence.append(f"Signed with key {p.sig_key_id.upper()}"
-                                      + (f" ({key_label})" if key_label else " (key not recognised)"))
+                    c.evidence.append(
+                        f"Signed with key {p.sig_key_id.upper()}"
+                        + (f" ({key_label})" if key_label else " (key not recognised)")
+                    )
                     if not key_label:
                         c.flags.append({"severity": "low", "message": "Signed by a key that is not a known vendor key"})
                 else:
                     c.flags.append({"severity": "medium", "message": "Package is not signed by any vendor key"})
                 if repo == "@commandline":
-                    c.flags.append({"severity": "medium",
-                                    "message": "Installed from a loose RPM file instead of a vendor repository"})
+                    c.flags.append(
+                        {
+                            "severity": "medium",
+                            "message": "Installed from a loose RPM file instead of a vendor repository",
+                        }
+                    )
                 if primary and p.vendor != primary:
-                    c.flags.append({"severity": "low", "message": f"Third-party package: supplied by "
-                                    f"{suppliers.rpm_vendor_label(p.vendor)}, not {suppliers.rpm_vendor_label(primary)}"})
+                    c.flags.append(
+                        {
+                            "severity": "low",
+                            "message": f"Third-party package: supplied by "
+                            f"{suppliers.rpm_vendor_label(p.vendor)}, not {suppliers.rpm_vendor_label(primary)}",
+                        }
+                    )
                 self._add(c)
                 for f in p.files:
                     self.owner[self.w.resolve(f)] = c.id
@@ -336,28 +394,45 @@ class Analyzer:
                 status = self.w.content_at("var/lib/dpkg/status", ls.index)
                 if status:
                     pkgs += ecosystems.parse_dpkg_status(status)
-                sd = {p for l in self.w.layers[:ls.index + 1] for p in l.captured if p.startswith("var/lib/dpkg/status.d/")}
+                sd = {
+                    p
+                    for lyr in self.w.layers[: ls.index + 1]
+                    for p in lyr.captured
+                    if p.startswith("var/lib/dpkg/status.d/")
+                }
                 for p in sorted(sd):
                     if not p.endswith(".md5sums") and (data := self.w.content_at(p, ls.index)):
                         pkgs += ecosystems.parse_dpkg_status(data)
                 snaps.append((ls.index, pkgs))
         if not snaps:
             return
-        final, removed = _track(snaps, lambda p: (p["Package"], p.get("Architecture", "")),
-                                lambda p: p.get("Version", ""))
-        self.removed_packages += [{"layer": l, "name": n, "version": v, "ecosystem": "deb"} for l, n, v in removed]
+        final, removed = _track(
+            snaps, lambda p: (p["Package"], p.get("Architecture", "")), lambda p: p.get("Version", "")
+        )
+        self.removed_packages += [{"layer": lyr, "name": n, "version": v, "ecosystem": "deb"} for lyr, n, v in removed]
         distro = suppliers.distro_label(self.os_release)
         for st in sorted(final.values(), key=lambda s: s["pkgs"][0]["Package"]):
             for p in st["pkgs"]:
                 name, ver, arch = p["Package"], p.get("Version", ""), p.get("Architecture", "")
-                c = Component(self._id("deb", name, ver), name, ver, "deb", distro, layer=st["layer"],
-                              introduced_layer=st["introduced"], change=st["change"], previous_version=st["prev"],
-                              purl=f"pkg:deb/{self.os_release.get('ID', 'debian')}/{name}@{ver}?arch={arch}")
+                c = Component(
+                    self._id("deb", name, ver),
+                    name,
+                    ver,
+                    "deb",
+                    distro,
+                    layer=st["layer"],
+                    introduced_layer=st["introduced"],
+                    change=st["change"],
+                    previous_version=st["prev"],
+                    purl=f"pkg:deb/{self.os_release.get('ID', 'debian')}/{name}@{ver}?arch={arch}",
+                )
                 if p.get("Maintainer"):
                     c.evidence.append(f"Maintainer: {p['Maintainer']}")
                     if not _distro_maintainer(p["Maintainer"], self.os_release):
                         c.supplier = f"{p['Maintainer'].split('<')[0].strip()} (third party)"
-                        c.flags.append({"severity": "low", "message": f"Third-party package, not maintained by {distro}"})
+                        c.flags.append(
+                            {"severity": "low", "message": f"Third-party package, not maintained by {distro}"}
+                        )
                 if p.get("Source"):
                     c.evidence.append(f"Source package: {p['Source']}")
                 self._add(c)
@@ -370,19 +445,31 @@ class Analyzer:
     # ---- apk
 
     def _apk(self) -> None:
-        snaps = [(ls.index, ecosystems.parse_apk_installed(ls.captured["lib/apk/db/installed"]))
-                 for ls in self.w.layers if "lib/apk/db/installed" in ls.captured]
+        snaps = [
+            (ls.index, ecosystems.parse_apk_installed(ls.captured["lib/apk/db/installed"]))
+            for ls in self.w.layers
+            if "lib/apk/db/installed" in ls.captured
+        ]
         if not snaps:
             return
         final, removed = _track(snaps, lambda p: (p["P"], p.get("A", "")), lambda p: p.get("V", ""))
-        self.removed_packages += [{"layer": l, "name": n, "version": v, "ecosystem": "apk"} for l, n, v in removed]
+        self.removed_packages += [{"layer": lyr, "name": n, "version": v, "ecosystem": "apk"} for lyr, n, v in removed]
         distro = suppliers.distro_label(self.os_release)
         for st in sorted(final.values(), key=lambda s: s["pkgs"][0]["P"]):
             for p in st["pkgs"]:
-                c = Component(self._id("apk", p["P"], p.get("V", "")), p["P"], p.get("V", ""), "apk", distro,
-                              layer=st["layer"], introduced_layer=st["introduced"], change=st["change"],
-                              previous_version=st["prev"], license=p.get("L", ""),
-                              purl=f"pkg:apk/{self.os_release.get('ID', 'alpine')}/{p['P']}@{p.get('V', '')}")
+                c = Component(
+                    self._id("apk", p["P"], p.get("V", "")),
+                    p["P"],
+                    p.get("V", ""),
+                    "apk",
+                    distro,
+                    layer=st["layer"],
+                    introduced_layer=st["introduced"],
+                    change=st["change"],
+                    previous_version=st["prev"],
+                    license=p.get("L", ""),
+                    purl=f"pkg:apk/{self.os_release.get('ID', 'alpine')}/{p['P']}@{p.get('V', '')}",
+                )
                 if p.get("o"):
                     c.evidence.append(f"Source package: {p['o']}")
                 if p.get("m"):
@@ -409,8 +496,11 @@ class Analyzer:
         for path in sorted(self.w.files):
             base = posixpath.basename(path)
             is_egg_file = path.endswith(".egg-info") and self.w.files[path].kind == "f"
-            if not (base in ("METADATA", "PKG-INFO") and path.rsplit("/", 2)[-2].endswith((".dist-info", ".egg-info"))
-                    or is_egg_file):
+            if not (
+                base in ("METADATA", "PKG-INFO")
+                and path.rsplit("/", 2)[-2].endswith((".dist-info", ".egg-info"))
+                or is_egg_file
+            ):
                 continue
             data = self.w.content(path)
             if not data:
@@ -421,10 +511,18 @@ class Analyzer:
             dist = path if is_egg_file else posixpath.dirname(path)
             site = posixpath.dirname(dist)
             rec = self.w.files[path]
-            c = Component(self._id("python", meta["Name"], meta["Version"]), meta["Name"], meta["Version"],
-                          "python", "PyPI (Python Package Index)", layer=rec.layer, introduced_layer=rec.layer,
-                          paths=[dist], license=meta["License"][:120],
-                          purl=f"pkg:pypi/{ecosystems.normalize_pypi(meta['Name'])}@{meta['Version']}")
+            c = Component(
+                self._id("python", meta["Name"], meta["Version"]),
+                meta["Name"],
+                meta["Version"],
+                "python",
+                "PyPI (Python Package Index)",
+                layer=rec.layer,
+                introduced_layer=rec.layer,
+                paths=[dist],
+                license=meta["License"][:120],
+                purl=f"pkg:pypi/{ecosystems.normalize_pypi(meta['Name'])}@{meta['Version']}",
+            )
             installer = (self.w.content(f"{dist}/INSTALLER") or b"").decode(errors="replace").strip()
             direct = self.w.content(f"{dist}/direct_url.json")
             if installer:
@@ -434,7 +532,9 @@ class Analyzer:
                 u = url.group(1).decode(errors="replace") if url else ""
                 if u.startswith("file:"):
                     c.supplier = "Local source code (not from a package index)"
-                    c.flags.append({"severity": "low", "message": "Installed from local files rather than a package index"})
+                    c.flags.append(
+                        {"severity": "low", "message": "Installed from local files rather than a package index"}
+                    )
                 else:
                     c.supplier = f"Direct download from {u}"
                     c.flags.append({"severity": "low", "message": "Installed straight from a URL, not a package index"})
@@ -462,10 +562,19 @@ class Analyzer:
             pkg_dir = posixpath.dirname(path)
             self.npm_dirs.add(pkg_dir)
             name = meta["name"]
-            c = Component(self._id("npm", name, meta["version"]), name, meta["version"], "npm",
-                          suppliers.registry_from_url(meta["resolved"], "npm public registry (npmjs.com)"),
-                          source=meta["resolved"], layer=rec.layer, introduced_layer=rec.layer, paths=[pkg_dir],
-                          license=meta["license"], purl=f"pkg:npm/{name.replace('@', '%40')}@{meta['version']}")
+            c = Component(
+                self._id("npm", name, meta["version"]),
+                name,
+                meta["version"],
+                "npm",
+                suppliers.registry_from_url(meta["resolved"], "npm public registry (npmjs.com)"),
+                source=meta["resolved"],
+                layer=rec.layer,
+                introduced_layer=rec.layer,
+                paths=[pkg_dir],
+                license=meta["license"],
+                purl=f"pkg:npm/{name.replace('@', '%40')}@{meta['version']}",
+            )
             if meta["repository"]:
                 c.evidence.append(f"Source repository: {meta['repository']}")
             self._managed(c, path)
@@ -477,12 +586,26 @@ class Analyzer:
             if not found:
                 continue
             for j in found:
-                name = f"{j['group']}:{j['artifact']}" if j["group"] and j["evidence"] == "pom.properties" else j["artifact"]
-                c = Component(self._id("java", name, j["version"]), name, j["version"], "java",
-                              suppliers.java_supplier(j["group"], j["evidence"]), layer=rec.layer,
-                              introduced_layer=rec.layer, paths=[j["inner"]],
-                              purl=(f"pkg:maven/{j['group']}/{j['artifact']}@{j['version']}"
-                                    if j["evidence"] == "pom.properties" else ""))
+                name = (
+                    f"{j['group']}:{j['artifact']}"
+                    if j["group"] and j["evidence"] == "pom.properties"
+                    else j["artifact"]
+                )
+                c = Component(
+                    self._id("java", name, j["version"]),
+                    name,
+                    j["version"],
+                    "java",
+                    suppliers.java_supplier(j["group"], j["evidence"]),
+                    layer=rec.layer,
+                    introduced_layer=rec.layer,
+                    paths=[j["inner"]],
+                    purl=(
+                        f"pkg:maven/{j['group']}/{j['artifact']}@{j['version']}"
+                        if j["evidence"] == "pom.properties"
+                        else ""
+                    ),
+                )
                 c.evidence.append(f"Identified from {j['evidence']}")
                 if j["inner"] != path:
                     c.parent = path
@@ -516,22 +639,43 @@ class Analyzer:
                 g = rec.go
                 main_mod, main_ver = g["main"] or ("", "")
                 name = g["path"] or posixpath.basename(path)
-                c = Component(self._id("go-binary", name, main_ver or g["go_version"]), name,
-                              main_ver if main_ver and main_ver != "(devel)" else "", "go-binary",
-                              f"Compiled Go program ({main_mod or name})", layer=rec.layer, introduced_layer=rec.layer,
-                              paths=[path], evidence=[f"Built with {g['go_version']}", f"SHA-256 {rec.sha256}"])
+                c = Component(
+                    self._id("go-binary", name, main_ver or g["go_version"]),
+                    name,
+                    main_ver if main_ver and main_ver != "(devel)" else "",
+                    "go-binary",
+                    f"Compiled Go program ({main_mod or name})",
+                    layer=rec.layer,
+                    introduced_layer=rec.layer,
+                    paths=[path],
+                    evidence=[f"Built with {g['go_version']}", f"SHA-256 {rec.sha256}"],
+                )
                 if g.get("settings", {}).get("vcs.revision"):
                     c.evidence.append(f"Source revision {g['settings']['vcs.revision']}")
                 if owner_id:
                     self._managed(c, path)
                 else:
-                    c.flags.append({"severity": "low", "message": "Program was copied in directly, not installed by a package manager"})
+                    c.flags.append(
+                        {
+                            "severity": "low",
+                            "message": "Program was copied in directly, not installed by a package manager",
+                        }
+                    )
                 self._add(c)
                 for mod, ver in g["deps"]:
-                    m = Component(self._id("go-module", mod, ver), mod, ver, "go-module",
-                                  suppliers.go_module_supplier(mod), layer=rec.layer, introduced_layer=rec.layer,
-                                  paths=[path], parent=path, purl=f"pkg:golang/{mod}@{ver}",
-                                  evidence=[f"Compiled into {path}"])
+                    m = Component(
+                        self._id("go-module", mod, ver),
+                        mod,
+                        ver,
+                        "go-module",
+                        suppliers.go_module_supplier(mod),
+                        layer=rec.layer,
+                        introduced_layer=rec.layer,
+                        paths=[path],
+                        parent=path,
+                        purl=f"pkg:golang/{mod}@{ver}",
+                        evidence=[f"Compiled into {path}"],
+                    )
                     if c.managed_by:
                         m.managed_by = c.managed_by
                     self._add(m)
@@ -541,16 +685,33 @@ class Analyzer:
             if owner_id or path in self.lang_owned or self._in_npm(path):
                 continue
             unowned_by_layer[rec.layer] += 1
-            c = Component(self._id("binary", posixpath.basename(path), ""), posixpath.basename(path), "",
-                          "binary", "Unknown - not installed by any package manager", layer=rec.layer,
-                          introduced_layer=rec.layer, paths=[path], evidence=[f"SHA-256 {rec.sha256}"] if rec.sha256 else [])
-            c.flags.append({"severity": "medium", "message": "No package record: this file can only be traced to "
-                            "the build step that added it"})
+            c = Component(
+                self._id("binary", posixpath.basename(path), ""),
+                posixpath.basename(path),
+                "",
+                "binary",
+                "Unknown - not installed by any package manager",
+                layer=rec.layer,
+                introduced_layer=rec.layer,
+                paths=[path],
+                evidence=[f"SHA-256 {rec.sha256}"] if rec.sha256 else [],
+            )
+            c.flags.append(
+                {
+                    "severity": "medium",
+                    "message": "No package record: this file can only be traced to the build step that added it",
+                }
+            )
             self._add(c)
         for cid, paths in replaced.items():
             c = comp_by_id[cid]
-            c.flags.append({"severity": "medium", "message": f"{len(paths)} program file(s) from this package were "
-                            f"replaced after installation: " + ", ".join(paths[:3])})
+            c.flags.append(
+                {
+                    "severity": "medium",
+                    "message": f"{len(paths)} program file(s) from this package were "
+                    f"replaced after installation: " + ", ".join(paths[:3]),
+                }
+            )
 
 
 def _distro_maintainer(maintainer: str, os_release: dict) -> bool:

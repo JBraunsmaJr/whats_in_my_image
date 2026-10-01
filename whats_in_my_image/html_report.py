@@ -8,12 +8,25 @@ from html import escape
 from .vulns import SEVERITIES
 
 ORIGIN_SLOTS = ["var(--series-1)", "var(--series-3)", "var(--series-7)", "var(--series-5)"]
-SEV_COLOR = {"CRITICAL": "var(--st-critical)", "HIGH": "var(--st-serious)", "MEDIUM": "var(--st-warning)",
-             "LOW": "var(--muted)", "UNKNOWN": "var(--gridline-strong)"}
-FLAG_SEV = {"high": ("High", "var(--st-critical)", "!"), "medium": ("Medium", "var(--st-serious)", "!"),
-            "low": ("Low", "var(--st-warning)", "i"), "info": ("Info", "var(--muted)", "i")}
-TONE = {"good": ("var(--st-good)", "✓", "Good"), "bad": ("var(--st-critical)", "!", "Attention"),
-        "warn": ("var(--st-warning)", "!", "Caution"), "neutral": ("var(--series-1)", "•", "Fact")}
+SEV_COLOR = {
+    "CRITICAL": "var(--st-critical)",
+    "HIGH": "var(--st-serious)",
+    "MEDIUM": "var(--st-warning)",
+    "LOW": "var(--muted)",
+    "UNKNOWN": "var(--gridline-strong)",
+}
+FLAG_SEV = {
+    "high": ("High", "var(--st-critical)", "!"),
+    "medium": ("Medium", "var(--st-serious)", "!"),
+    "low": ("Low", "var(--st-warning)", "i"),
+    "info": ("Info", "var(--muted)", "i"),
+}
+TONE = {
+    "good": ("var(--st-good)", "✓", "Good"),
+    "bad": ("var(--st-critical)", "!", "Attention"),
+    "warn": ("var(--st-warning)", "!", "Caution"),
+    "neutral": ("var(--series-1)", "•", "Fact"),
+}
 
 
 def e(x) -> str:
@@ -48,8 +61,10 @@ def _stacked(segments: list[tuple[str, int, str]], total: int, unit: str) -> str
             continue
         pct = 100 * val / total
         tip = f"{label}: {val:,} {unit} ({pct:.0f}%)"
-        parts.append(f'<div class="seg" style="flex:{val} 1 0;background:{color}" data-tip="{e(tip)}" '
-                     f'aria-label="{e(tip)}"></div>')
+        parts.append(
+            f'<div class="seg" style="flex:{val} 1 0;background:{color}" data-tip="{e(tip)}" '
+            f'aria-label="{e(tip)}"></div>'
+        )
     return f'<div class="bar" role="img">{"".join(parts)}</div>'
 
 
@@ -65,24 +80,37 @@ def render(m: dict) -> str:
 
     # ---------------------------------------------------------------- header
     title = f"Provenance report: {img['name']}"
-    meta_rows = [("Image", img["name"]), ("Digest", img["digest"] or "n/a"), ("Operating system", img["os"] or "unknown"),
-                 ("Platform", img["platform"] or "n/a"), ("Size (compressed)", img["size_h"]),
-                 ("Layers", img["layer_count"]), ("Image built", (img["created"] or "unknown")[:19].replace("T", " ")),
-                 ("Report generated", m["generated"])]
+    meta_rows = [
+        ("Image", img["name"]),
+        ("Digest", img["digest"] or "n/a"),
+        ("Operating system", img["os"] or "unknown"),
+        ("Platform", img["platform"] or "n/a"),
+        ("Size (compressed)", img["size_h"]),
+        ("Layers", img["layer_count"]),
+        ("Image built", (img["created"] or "unknown")[:19].replace("T", " ")),
+        ("Report generated", m["generated"]),
+    ]
     meta_html = "".join(f"<div><dt>{e(k)}</dt><dd>{e(v)}</dd></div>" for k, v in meta_rows)
 
     # ---------------------------------------------------------------- bottom line
     takeaways = "".join(
         f'<li class="tk"><span class="tk-ic" style="background:{TONE[t["tone"]][0]}" '
         f'aria-label="{TONE[t["tone"]][2]}">{TONE[t["tone"]][1]}</span><span>{e(t["text"])}</span></li>'
-        for t in m["takeaways"])
+        for t in m["takeaways"]
+    )
 
     # ---------------------------------------------------------------- KPI tiles
     tiles = [("Components found", f"{total:,}", "", "")]
     for o in origins:
         if o["kind"] != "unknown" or o["components"]:
-            tiles.append((o["label"], f"{o['components']:,}", colors[o["key"]],
-                          f"{round(100 * o['components'] / total) if total else 0}% of components"))
+            tiles.append(
+                (
+                    o["label"],
+                    f"{o['components']:,}",
+                    colors[o["key"]],
+                    f"{round(100 * o['components'] / total) if total else 0}% of components",
+                )
+            )
     n_unmanaged = sum(1 for c in comps if c["ecosystem"] == "binary")
     tiles.append(("Untraceable program files", f"{n_unmanaged:,}", "", "no package record"))
     if vulns is not None:
@@ -91,11 +119,15 @@ def render(m: dict) -> str:
     tiles_html = "".join(
         f'<div class="tile">{f"<span class=sw style=background:{c}></span>" if c else ""}'
         f'<div class="tile-label">{e(lbl)}</div><div class="tile-val">{e(val)}</div>'
-        f'<div class="tile-sub">{e(sub)}</div></div>' for lbl, val, c, sub in tiles)
+        f'<div class="tile-sub">{e(sub)}</div></div>'
+        for lbl, val, c, sub in tiles
+    )
 
     # ---------------------------------------------------------------- composition charts
-    legend = "".join(f'<span class="lg"><span class="sw" style="background:{colors[o["key"]]}"></span>{e(o["label"])}</span>'
-                     for o in origins)
+    legend = "".join(
+        f'<span class="lg"><span class="sw" style="background:{colors[o["key"]]}"></span>{e(o["label"])}</span>'
+        for o in origins
+    )
     comp_bar = _stacked([(o["label"], o["components"], colors[o["key"]]) for o in origins], total, "components")
     size_total = sum(o["size"] for o in origins)
     size_bar = _stacked([(o["label"], o["size"], colors[o["key"]]) for o in origins], size_total, "bytes")
@@ -104,15 +136,20 @@ def render(m: dict) -> str:
     for eco, n in type_counts.most_common():
         segs = [(o["label"], o["by_type"].get(eco, 0), colors[o["key"]]) for o in origins]
         cells = "".join(f'<td class="num">{o["by_type"].get(eco, 0):,}</td>' for o in origins)
-        type_rows.append(f'<tr><th scope="row">{e(m["type_labels"].get(eco, eco))}</th>{cells}'
-                         f'<td class="num"><b>{n:,}</b></td><td class="barcell">{_stacked(segs, n, "components")}</td></tr>')
+        type_rows.append(
+            f'<tr><th scope="row">{e(m["type_labels"].get(eco, eco))}</th>{cells}'
+            f'<td class="num"><b>{n:,}</b></td><td class="barcell">{_stacked(segs, n, "components")}</td></tr>'
+        )
     type_head = "".join(f'<th class="num">{e(o["label"])}</th>' for o in origins)
 
     vuln_chart = ""
     if vulns is not None:
         vorigins = [o for o in origins if o["vulns_total"]]
-        vlegend = "".join(f'<span class="lg"><span class="sw" style="background:{colors.get(o["key"], "var(--muted)")}">'
-                          f'</span>{e(o["label"])}</span>' for o in vorigins)
+        vlegend = "".join(
+            f'<span class="lg"><span class="sw" style="background:{colors.get(o["key"], "var(--muted)")}">'
+            f"</span>{e(o['label'])}</span>"
+            for o in vorigins
+        )
         rows = []
         vmax = max([sum(o["vulns"][s] for o in vorigins) for s in SEVERITIES] + [1])
         for s in SEVERITIES:
@@ -122,25 +159,31 @@ def render(m: dict) -> str:
             segs = "".join(
                 f'<div class="seg" style="flex:{o["vulns"][s]} 1 0;background:{colors.get(o["key"], "var(--muted)")}" '
                 f'data-tip="{e(o["label"])}: {o["vulns"][s]:,} {s.lower()}"></div>'
-                for o in vorigins if o["vulns"][s])
+                for o in vorigins
+                if o["vulns"][s]
+            )
             width = 100 * n / vmax
-            rows.append(f'<div class="vrow"><div class="vlab"><span class="sevdot" style="background:{SEV_COLOR[s]}">'
-                        f'</span>{s.title()}</div><div class="vtrack"><div class="bar" style="width:{max(width, 0.5) if n else 0}%">'
-                        f'{segs}</div><span class="vnum">{n:,}</span></div></div>')
+            rows.append(
+                f'<div class="vrow"><div class="vlab"><span class="sevdot" style="background:{SEV_COLOR[s]}">'
+                f'</span>{s.title()}</div><div class="vtrack"><div class="bar" style="width:{max(width, 0.5) if n else 0}%">'
+                f'{segs}</div><span class="vnum">{n:,}</span></div></div>'
+            )
         vtable_rows = "".join(
             f'<tr><th scope="row"><span class="sw" style="background:{colors.get(o["key"], "var(--muted)")}"></span>'
-            f'{e(o["label"])}</th>' + "".join(f'<td class="num">{o["vulns"][s]:,}</td>' for s in SEVERITIES)
+            f"{e(o['label'])}</th>"
+            + "".join(f'<td class="num">{o["vulns"][s]:,}</td>' for s in SEVERITIES)
             + f'<td class="num"><b>{o["vulns_total"]:,}</b></td><td class="num">{o["vulns_fixable"]:,}</td></tr>'
-            for o in vorigins)
+            for o in vorigins
+        )
         vuln_chart = f"""
 <div class="card">
   <h3>Known vulnerabilities by severity and origin</h3>
-  <p class="sub">Source: {e(m['vuln_tool'] or 'imported report')}. Each vulnerability is attributed to the layer that
+  <p class="sub">Source: {e(m["vuln_tool"] or "imported report")}. Each vulnerability is attributed to the layer that
   installed the affected version of the component.</p>
   <div class="legend">{vlegend}</div>
-  <div class="vchart">{''.join(rows) if vulns else '<p>No known vulnerabilities reported.</p>'}</div>
+  <div class="vchart">{"".join(rows) if vulns else "<p>No known vulnerabilities reported.</p>"}</div>
   <details class="tableview"><summary>Show as table</summary>
-  <table class="data"><thead><tr><th>Origin</th>{''.join(f'<th class="num">{s.title()}</th>' for s in SEVERITIES)}
+  <table class="data"><thead><tr><th>Origin</th>{"".join(f'<th class="num">{s.title()}</th>' for s in SEVERITIES)}
   <th class="num">Total</th><th class="num">Fix available</th></tr></thead><tbody>{vtable_rows}</tbody></table>
   </details>
 </div>"""
@@ -148,42 +191,55 @@ def render(m: dict) -> str:
     # ---------------------------------------------------------------- origins explained
     origin_cards = []
     for o in origins:
-        how = {"exact layer-digest match": "Proven: the layers are byte-for-byte identical (same SHA-256 digests) to the base image.",
-               "partial layer-digest match": "Proven for the shared layers only. The image was built from a different version of this base.",
-               "estimated from build timestamps": "Estimated from the gap in build timestamps. Not proof; supply --base for certainty.",
-               "layers added on top of the base": "Everything added after the base: the application Dockerfile / build pipeline.",
-               "none": "No base image was supplied, so these layers cannot be attributed."}.get(o["match"], o["match"])
-        layers_txt = (f"Layers {o['layers'][0]}–{o['layers'][-1]}" if len(o["layers"]) > 1
-                      else f"Layer {o['layers'][0]}" if o["layers"] else "")
+        how = {
+            "exact layer-digest match": "Proven: the layers are byte-for-byte identical (same SHA-256 digests) to the base image.",
+            "partial layer-digest match": "Proven for the shared layers only. The image was built from a different version of this base.",
+            "estimated from build timestamps": "Estimated from the gap in build timestamps. Not proof; supply --base for certainty.",
+            "layers added on top of the base": "Everything added after the base: the application Dockerfile / build pipeline.",
+            "none": "No base image was supplied, so these layers cannot be attributed.",
+        }.get(o["match"], o["match"])
+        layers_txt = (
+            f"Layers {o['layers'][0]}–{o['layers'][-1]}"
+            if len(o["layers"]) > 1
+            else f"Layer {o['layers'][0]}"
+            if o["layers"]
+            else ""
+        )
         origin_cards.append(
             f'<div class="ocard" style="border-color:{colors[o["key"]]}"><div class="ocard-h">{_badge(o["label"], colors[o["key"]])}'
             f'<span class="muted">{e(layers_txt)}</span></div>'
             + (f'<div class="mono small">{e(o["reference"])}</div>' if o["reference"] else "")
-            + f'<p>{e(how)}</p>' + (f'<p class="note">{e(o["note"])}</p>' if o["note"] else "") + "</div>")
+            + f"<p>{e(how)}</p>"
+            + (f'<p class="note">{e(o["note"])}</p>' if o["note"] else "")
+            + "</div>"
+        )
 
     # ---------------------------------------------------------------- build timeline
     steps = []
-    for l in m["layers"]:
-        risk = "".join(f'<span class="flag" style="--fc:{FLAG_SEV[r["severity"]][1]}">'
-                       f'<b>{FLAG_SEV[r["severity"]][0]}</b> {e(r["message"])}</span>' for r in l["risks"])
-        urls = "".join(f"<li class='mono'>{e(u)}</li>" for u in l["urls"])
+    for lyr in m["layers"]:
+        risk = "".join(
+            f'<span class="flag" style="--fc:{FLAG_SEV[r["severity"]][1]}">'
+            f"<b>{FLAG_SEV[r['severity']][0]}</b> {e(r['message'])}</span>"
+            for r in lyr["risks"]
+        )
+        urls = "".join(f"<li class='mono'>{e(u)}</li>" for u in lyr["urls"])
         steps.append(f"""
-<li class="step" style="--oc:{colors.get(l['origin'], 'var(--muted)')}">
-  <div class="step-n">{l['number']}</div>
+<li class="step" style="--oc:{colors.get(lyr["origin"], "var(--muted)")}">
+  <div class="step-n">{lyr["number"]}</div>
   <div class="step-body">
-    <div class="step-top">{_badge(l['origin_label'], colors.get(l['origin'], 'var(--muted)'))}
-      <span class="muted">{e(l['size_h'])} · {l['components']:,} components{f" · {l['vulns']:,} vulnerabilities" if vulns is not None else ''}
-      {(' · ' + e(l['created'][:10])) if l['created'] else ''}</span></div>
-    <div class="step-sum">{e(l['content_summary'])}</div>
-    <div class="step-rec"><span class="muted">Build record:</span> {e(l['summary'])}</div>
-    {f'<div class="flags">{risk}</div>' if risk else ''}
+    <div class="step-top">{_badge(lyr["origin_label"], colors.get(lyr["origin"], "var(--muted)"))}
+      <span class="muted">{e(lyr["size_h"])} · {lyr["components"]:,} components{f" · {lyr['vulns']:,} vulnerabilities" if vulns is not None else ""}
+      {(" · " + e(lyr["created"][:10])) if lyr["created"] else ""}</span></div>
+    <div class="step-sum">{e(lyr["content_summary"])}</div>
+    <div class="step-rec"><span class="muted">Build record:</span> {e(lyr["summary"])}</div>
+    {f'<div class="flags">{risk}</div>' if risk else ""}
     <details><summary>Technical detail</summary>
-      <dl class="kv"><dt>Instruction</dt><dd class="mono">{e(l['instruction'] or '(none recorded)')}</dd>
-      <dt>Command</dt><dd><pre>{e(l['command'] or '(none recorded)')}</pre></dd>
-      {f'<dt>URLs contacted</dt><dd><ul>{urls}</ul></dd>' if urls else ''}
-      <dt>Layer digest</dt><dd class="mono">{e(l['diff_id'])}</dd>
-      <dt>Files</dt><dd>{l['files_added']:,} added, {l['files_replaced']:,} replaced, {l['files_deleted']:,} deleted</dd>
-      {f"<dt>Warning</dt><dd>{e(l['error'])}</dd>" if l['error'] else ''}</dl>
+      <dl class="kv"><dt>Instruction</dt><dd class="mono">{e(lyr["instruction"] or "(none recorded)")}</dd>
+      <dt>Command</dt><dd><pre>{e(lyr["command"] or "(none recorded)")}</pre></dd>
+      {f"<dt>URLs contacted</dt><dd><ul>{urls}</ul></dd>" if urls else ""}
+      <dt>Layer digest</dt><dd class="mono">{e(lyr["diff_id"])}</dd>
+      <dt>Files</dt><dd>{lyr["files_added"]:,} added, {lyr["files_replaced"]:,} replaced, {lyr["files_deleted"]:,} deleted</dd>
+      {f"<dt>Warning</dt><dd>{e(lyr['error'])}</dd>" if lyr["error"] else ""}</dl>
     </details>
   </div>
 </li>""")
@@ -195,13 +251,16 @@ def render(m: dict) -> str:
         items = "".join(f"<li class='mono'>{e(i)}</li>" for i in f["items"])
         oc = colors.get(f["origin"], "var(--muted)")
         detail = f'<p class="f-detail">{e(f["detail"])}</p>' if f["detail"] else ""
-        more = (f'<details><summary>Show {len(f["items"]):,} item(s)</summary><ul class="items">{items}</ul></details>'
-                if items else "")
+        more = (
+            f'<details><summary>Show {len(f["items"]):,} item(s)</summary><ul class="items">{items}</ul></details>'
+            if items
+            else ""
+        )
         fcards.append(f"""
-<div class="finding" data-origin="{e(f['origin'])}">
+<div class="finding" data-origin="{e(f["origin"])}">
   <div class="f-head"><span class="sev" style="--fc:{col}"><span class="sev-ic">{ic}</span>{lbl}</span>
-  {_badge(f['origin_label'], oc)}</div>
-  <div class="f-title">{e(f['title'])}</div>
+  {_badge(f["origin_label"], oc)}</div>
+  <div class="f-title">{e(f["title"])}</div>
   {detail}
   {more}
 </div>""")
@@ -217,46 +276,67 @@ def render(m: dict) -> str:
                 f'<tr data-origin="{e(v["origin"])}" data-sev="{e(v["severity"])}">'
                 f'<td class="nw"><span class="sevdot" style="background:{SEV_COLOR.get(v["severity"])}"></span>{e(v["severity"].title())}</td>'
                 f'<td class="mono nw">{e(v["id"])}</td><td>{e(v["package"])}</td><td class="mono">{e(v["version"])}</td>'
-                + (f'<td class="mono">{e(v["fixed_version"])}</td>' if v["fixed_version"]
-                   else '<td class="muted nw">no fix yet</td>')
-                + f'<td>{_badge(olabel.get(v["origin"], v["origin"]), colors.get(v["origin"], "var(--muted)"))}'
+                + (
+                    f'<td class="mono">{e(v["fixed_version"])}</td>'
+                    if v["fixed_version"]
+                    else '<td class="muted nw">no fix yet</td>'
+                )
+                + f"<td>{_badge(olabel.get(v['origin'], v['origin']), colors.get(v['origin'], 'var(--muted)'))}"
                 f'<div class="muted small">{("layer " + str(v["layer"] + 1)) if v["layer"] is not None else ""}'
-                f' · {e(v["attribution"])}</div></td>'
-                f'<td class="small">{e(v["title"])}</td></tr>')
-        vfilters = _filter_chips("vt", [(o["key"], o["label"], colors.get(o["key"], "var(--muted)"))
-                                       for o in origins if o["vulns_total"]], "origin")
+                f" · {e(v['attribution'])}</div></td>"
+                f'<td class="small">{e(v["title"])}</td></tr>'
+            )
+        vfilters = _filter_chips(
+            "vt",
+            [(o["key"], o["label"], colors.get(o["key"], "var(--muted)")) for o in origins if o["vulns_total"]],
+            "origin",
+        )
         vfilters += _filter_chips("vt", [(s, s.title(), SEV_COLOR[s]) for s in SEVERITIES], "sev")
         vuln_section = f"""
 <section id="vulns"><h2><span class="num-h">5</span>Vulnerabilities and who introduced them</h2>
 <p class="lead">Every known vulnerability, traced to the build step that installed the affected component.</p>
 <div class="controls" data-table="vt">{vfilters}<input type="search" placeholder="Search CVE or package..." data-search="vt"></div>
 <div class="tablewrap"><table class="data" id="vt"><thead><tr><th>Severity</th><th>ID</th><th>Package</th><th>Installed</th>
-<th>Fixed in</th><th>Introduced by</th><th>Summary</th></tr></thead><tbody>{''.join(vrows)}</tbody></table></div>
+<th>Fixed in</th><th>Introduced by</th><th>Summary</th></tr></thead><tbody>{"".join(vrows)}</tbody></table></div>
 <p class="muted small" data-count="vt"></p></section>"""
 
     # ---------------------------------------------------------------- inventory
     crow = []
     for c in comps:
-        flags = "".join(f'<span class="flag sm" style="--fc:{FLAG_SEV[f["severity"]][1]}">{e(f["message"])}</span>'
-                        for f in c["flags"])
+        flags = "".join(
+            f'<span class="flag sm" style="--fc:{FLAG_SEV[f["severity"]][1]}">{e(f["message"])}</span>'
+            for f in c["flags"]
+        )
         change = ""
         if c["change"] in ("upgraded", "downgraded", "changed"):
             change = f'<div class="small muted">{e(c["change"])} from {e(c["previous_version"])}</div>'
-        ev = "".join(f"<li>{e(x)}</li>" for x in c["evidence"] + ([f"Location: {p}" for p in c["paths"][:3]])
-                     + ([f"Package URL: {c['purl']}"] if c["purl"] else [])
-                     + ([f"License: {c['license']}"] if c["license"] else []))
-        via = (f'<div class="small muted">via {e(c["source"])}</div>'
-               if c["source"] and not c["source"].startswith("http") else "")
+        ev = "".join(
+            f"<li>{e(x)}</li>"
+            for x in c["evidence"]
+            + ([f"Location: {p}" for p in c["paths"][:3]])
+            + ([f"Package URL: {c['purl']}"] if c["purl"] else [])
+            + ([f"License: {c['license']}"] if c["license"] else [])
+        )
+        via = (
+            f'<div class="small muted">via {e(c["source"])}</div>'
+            if c["source"] and not c["source"].startswith("http")
+            else ""
+        )
         crow.append(
             f'<tr data-origin="{e(c["origin"])}" data-type="{e(c["ecosystem"])}" data-flag="{"1" if c["flags"] else "0"}">'
             f'<td><b>{e(c["name"])}</b>{change}</td><td class="mono">{e(c["version"] or "—")}</td>'
-            f'<td>{e(c["type_label"])}</td>'
-            f'<td>{e(c["supplier"])}{via}</td>'
-            f'<td>{_badge(olabel.get(c["origin"], c["origin"]), colors.get(c["origin"], "var(--muted)"))}'
+            f"<td>{e(c['type_label'])}</td>"
+            f"<td>{e(c['supplier'])}{via}</td>"
+            f"<td>{_badge(olabel.get(c['origin'], c['origin']), colors.get(c['origin'], 'var(--muted)'))}"
             f'<div class="small muted">layer {c["layer"] + 1}</div></td>'
-            f'<td>{flags}<details><summary>Evidence</summary><ul class="ev">{ev}</ul></details></td></tr>')
-    cfilters = _filter_chips("ct", [(o["key"], o["label"], colors[o["key"]]) for o in origins if o["components"]], "origin")
-    cfilters += _filter_chips("ct", [(eco, m["type_labels"].get(eco, eco), "") for eco, _ in type_counts.most_common()], "type")
+            f'<td>{flags}<details><summary>Evidence</summary><ul class="ev">{ev}</ul></details></td></tr>'
+        )
+    cfilters = _filter_chips(
+        "ct", [(o["key"], o["label"], colors[o["key"]]) for o in origins if o["components"]], "origin"
+    )
+    cfilters += _filter_chips(
+        "ct", [(eco, m["type_labels"].get(eco, eco), "") for eco, _ in type_counts.most_common()], "type"
+    )
     cfilters += _filter_chips("ct", [("1", "Only items with concerns", "var(--st-serious)")], "flag")
 
     # ---------------------------------------------------------------- notes
@@ -264,9 +344,15 @@ def render(m: dict) -> str:
     removed = m["removed_packages"]
     removed_html = ""
     if removed:
-        removed_html = ("<details><summary>" + f"{len(removed):,} packages were removed during the build</summary><ul class='items'>"
-                        + "".join(f"<li class='mono'>{e(r['name'])} {e(r['version'])} (removed in layer {r['layer'] + 1})</li>"
-                                  for r in removed[:500]) + "</ul></details>")
+        removed_html = (
+            "<details><summary>"
+            + f"{len(removed):,} packages were removed during the build</summary><ul class='items'>"
+            + "".join(
+                f"<li class='mono'>{e(r['name'])} {e(r['version'])} (removed in layer {r['layer'] + 1})</li>"
+                for r in removed[:500]
+            )
+            + "</ul></details>"
+        )
     vuln_toc = '<a href="#vulns">Vulnerabilities</a>' if vulns is not None else ""
     inv_n, meth_n = ("6", "7") if vulns is not None else ("5", "6")
 
@@ -278,9 +364,9 @@ def render(m: dict) -> str:
 <div id="tip" role="tooltip"></div>
 <header class="hero">
   <div class="wrap">
-    <div class="eyebrow">{e(m.get('subtitle') or 'Container image provenance report')}</div>
+    <div class="eyebrow">{e(m.get("subtitle") or "Container image provenance report")}</div>
     <h1>Where did everything in this image come from?</h1>
-    <div class="imgname mono">{e(img['name'])}</div>
+    <div class="imgname mono">{e(img["name"])}</div>
     <dl class="meta">{meta_html}</dl>
     <nav class="toc"><a href="#bottom-line">Bottom line</a><a href="#composition">Composition</a>
     <a href="#build">How it was built</a><a href="#findings">Findings</a>{vuln_toc}
@@ -297,7 +383,7 @@ def render(m: dict) -> str:
 <section id="composition"><h2><span class="num-h">2</span>Where the contents came from</h2>
   <p class="lead">An image is built in layers, like a stack of transparencies. The lower layers come from the base image,
   and the upper layers are added by the application team's build. Each layer below is attributed to whoever produced it.</p>
-  <div class="ocards">{''.join(origin_cards)}</div>
+  <div class="ocards">{"".join(origin_cards)}</div>
   <div class="grid2">
   <div class="card"><h3>Share of components</h3><div class="legend">{legend}</div>{comp_bar}
   <h3 class="mt">Share of image size</h3>{size_bar}</div>
@@ -305,12 +391,12 @@ def render(m: dict) -> str:
   </div>
   <div class="card"><h3>Components by type and origin</h3>
   <div class="tablewrap"><table class="data"><thead><tr><th>Type</th>{type_head}<th class="num">Total</th><th>Split</th></tr></thead>
-  <tbody>{''.join(type_rows)}</tbody></table></div></div>
+  <tbody>{"".join(type_rows)}</tbody></table></div></div>
 </section>
 
 <section id="build"><h2><span class="num-h">3</span>How the image was built, step by step</h2>
   <p class="lead">Each step created one layer. The colour shows who is responsible for that step.</p>
-  <ol class="timeline">{''.join(steps)}</ol>
+  <ol class="timeline">{"".join(steps)}</ol>
   {removed_html}
 </section>
 
@@ -323,7 +409,7 @@ def render(m: dict) -> str:
   <p class="lead">Every package, library and program file found, with its supplier and the evidence behind that answer.</p>
   <div class="controls" data-table="ct">{cfilters}<input type="search" placeholder="Search components..." data-search="ct"></div>
   <div class="tablewrap"><table class="data" id="ct"><thead><tr><th>Component</th><th>Version</th><th>Type</th>
-  <th>Supplied by</th><th>Added by</th><th>Concerns &amp; evidence</th></tr></thead><tbody>{''.join(crow)}</tbody></table></div>
+  <th>Supplied by</th><th>Added by</th><th>Concerns &amp; evidence</th></tr></thead><tbody>{"".join(crow)}</tbody></table></div>
   <p class="muted small" data-count="ct"></p>
 </section>
 
@@ -351,10 +437,10 @@ from (dnf history), and registry URLs.</li>
 <dt>CVE</dt><dd>A publicly catalogued security vulnerability.</dd>
 </dl></div>
 </div>
-{f'<div class="card notes"><h3>Notes and limitations</h3><ul>{notes}</ul></div>' if notes else ''}
+{f'<div class="card notes"><h3>Notes and limitations</h3><ul>{notes}</ul></div>' if notes else ""}
 </section>
 </main>
-<footer class="wrap muted small">{e(m['tool']['name'])} v{e(m['tool']['version'])} · generated {e(m['generated'])}</footer>
+<footer class="wrap muted small">{e(m["tool"]["name"])} v{e(m["tool"]["version"])} · generated {e(m["generated"])}</footer>
 <script>{JS}</script>
 </body></html>"""
 
@@ -362,8 +448,10 @@ from (dnf history), and registry URLs.</li>
 def _filter_chips(table: str, items: list[tuple[str, str, str]], attr: str) -> str:
     chips = "".join(
         f'<button type="button" class="chip" data-attr="{attr}" data-val="{e(k)}" aria-pressed="false">'
-        + (f'<span class="sw" style="background:{c}"></span>' if c else "") + f"{e(lbl)}</button>"
-        for k, lbl, c in items)
+        + (f'<span class="sw" style="background:{c}"></span>' if c else "")
+        + f"{e(lbl)}</button>"
+        for k, lbl, c in items
+    )
     return f'<div class="chips">{chips}</div>' if chips else ""
 
 

@@ -58,11 +58,23 @@ def rpm_repo_label(repo: str) -> str:
 def distro_label(os_release: dict[str, str]) -> str:
     ident = (os_release.get("ID") or "").lower()
     names = {
-        "rhel": "Red Hat", "centos": "CentOS Project", "rocky": "Rocky Linux", "almalinux": "AlmaLinux",
-        "fedora": "Fedora Project", "debian": "Debian Project", "ubuntu": "Ubuntu (Canonical)",
-        "alpine": "Alpine Linux", "wolfi": "Wolfi (Chainguard)", "chainguard": "Chainguard",
-        "amzn": "Amazon Linux", "ol": "Oracle Linux", "sles": "SUSE", "opensuse-leap": "openSUSE",
-        "photon": "VMware Photon OS", "mariner": "Microsoft CBL-Mariner", "azurelinux": "Microsoft Azure Linux",
+        "rhel": "Red Hat",
+        "centos": "CentOS Project",
+        "rocky": "Rocky Linux",
+        "almalinux": "AlmaLinux",
+        "fedora": "Fedora Project",
+        "debian": "Debian Project",
+        "ubuntu": "Ubuntu (Canonical)",
+        "alpine": "Alpine Linux",
+        "wolfi": "Wolfi (Chainguard)",
+        "chainguard": "Chainguard",
+        "amzn": "Amazon Linux",
+        "ol": "Oracle Linux",
+        "sles": "SUSE",
+        "opensuse-leap": "openSUSE",
+        "photon": "VMware Photon OS",
+        "mariner": "Microsoft CBL-Mariner",
+        "azurelinux": "Microsoft Azure Linux",
     }
     return names.get(ident, os_release.get("NAME") or "the operating-system vendor")
 

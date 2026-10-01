@@ -11,7 +11,8 @@ import sys
 import textwrap
 from pathlib import Path
 
-from . import __version__, html_report, report, vulns as vulnmod
+from . import __version__, html_report, report
+from . import vulns as vulnmod
 from .analyze import Analyzer, base_label, compute_origins
 from .sources import SourceError, load_image
 from .walker import Walker
@@ -26,7 +27,8 @@ EPILOG = textwrap.dedent("""\
     examples:
       wimi harbor.example.mil/team/api:2.4 \\
            --base registry1.dso.mil/ironbank/redhat/ubi/ubi9:9.4
-      wimi harbor.example.mil/team/api:2.4 --base "Iron Bank Python=registry1.dso.mil/ironbank/opensource/python:3.11" \\
+      wimi harbor.example.mil/team/api:2.4 \\
+           --base "Iron Bank Python=registry1.dso.mil/ironbank/opensource/python:3.11" \\
            --base registry1.dso.mil/ironbank/redhat/ubi/ubi9:9.4 --scan
       wimi api.tar --base ubi9.tar --vuln-report trivy.json --app-name "Payments team build"
 
@@ -36,28 +38,57 @@ EPILOG = textwrap.dedent("""\
 
 def _parser() -> argparse.ArgumentParser:
     p = argparse.ArgumentParser(
-        prog="wimi", formatter_class=argparse.RawDescriptionHelpFormatter, epilog=EPILOG,
+        prog="wimi",
+        formatter_class=argparse.RawDescriptionHelpFormatter,
+        epilog=EPILOG,
         description="What's In My Image: trace every package, library and program in a container image back to "
-                    "the base image or build step that put it there, and produce an executive-ready report.")
+        "the base image or build step that put it there, and produce an executive-ready report.",
+    )
     p.add_argument("image", help="image to analyse (see image sources below)")
-    p.add_argument("--base", action="append", default=[], metavar="[NAME=]IMAGE",
-                   help="base image the target was built FROM (repeat for a chain, e.g. Iron Bank Python and UBI)")
-    p.add_argument("--app-name", default="Application build (your team)",
-                   help="label for the layers added on top of the base (default: %(default)s)")
-    p.add_argument("--no-auto-base", action="store_true",
-                   help="do not try the base image recorded in the image's own annotations")
+    p.add_argument(
+        "--base",
+        action="append",
+        default=[],
+        metavar="[NAME=]IMAGE",
+        help="base image the target was built FROM (repeat for a chain, e.g. Iron Bank Python and UBI)",
+    )
+    p.add_argument(
+        "--app-name",
+        default="Application build (your team)",
+        help="label for the layers added on top of the base (default: %(default)s)",
+    )
+    p.add_argument(
+        "--no-auto-base", action="store_true", help="do not try the base image recorded in the image's own annotations"
+    )
     g = p.add_argument_group("vulnerabilities (optional)")
-    g.add_argument("--scan", nargs="?", const="auto", choices=["auto", "trivy", "grype"],
-                   help="run Trivy or Grype (if installed) and attribute every finding")
-    g.add_argument("--vuln-report", action="append", default=[], type=Path, metavar="FILE",
-                   help="import an existing Trivy / Grype / Harbor JSON report")
-    g.add_argument("--harbor-vulns", action="store_true",
-                   help="download the scan Harbor already ran for this image (Harbor registries only)")
+    g.add_argument(
+        "--scan",
+        nargs="?",
+        const="auto",
+        choices=["auto", "trivy", "grype"],
+        help="run Trivy or Grype (if installed) and attribute every finding",
+    )
+    g.add_argument(
+        "--vuln-report",
+        action="append",
+        default=[],
+        type=Path,
+        metavar="FILE",
+        help="import an existing Trivy / Grype / Harbor JSON report",
+    )
+    g.add_argument(
+        "--harbor-vulns",
+        action="store_true",
+        help="download the scan Harbor already ran for this image (Harbor registries only)",
+    )
     g = p.add_argument_group("output")
     g.add_argument("-o", "--output-dir", type=Path, default=Path("wimi-reports"))
     g.add_argument("--formats", default="html,json,csv", help="comma list of html,json,csv (default: %(default)s)")
-    g.add_argument("--subtitle", default="Container image provenance report",
-                   help="line shown above the report heading, e.g. 'Prepared for CISO review'")
+    g.add_argument(
+        "--subtitle",
+        default="Container image provenance report",
+        help="line shown above the report heading, e.g. 'Prepared for CISO review'",
+    )
     g.add_argument("-q", "--quiet", action="store_true", help="only print the final summary")
     g = p.add_argument_group("registry access")
     g.add_argument("--platform", default="linux/amd64", help="platform for multi-arch images (default: %(default)s)")
@@ -66,8 +97,11 @@ def _parser() -> argparse.ArgumentParser:
     g.add_argument("--insecure", action="store_true", help="skip TLS verification (self-signed Harbor)")
     g.add_argument("--ca-cert", help="CA bundle for registries using an internal certificate authority (e.g. DoD PKI)")
     g.add_argument("--plain-http", action="store_true", help="use http:// instead of https://")
-    g.add_argument("--cache-dir", type=Path, default=Path(os.environ.get("WIMI_CACHE",
-                                                                         Path.home() / ".cache" / "whats-in-my-image")))
+    g.add_argument(
+        "--cache-dir",
+        type=Path,
+        default=Path(os.environ.get("WIMI_CACHE", Path.home() / ".cache" / "whats-in-my-image")),
+    )
     p.add_argument("--version", action="version", version=f"%(prog)s {__version__}")
     return p
 
@@ -87,8 +121,13 @@ def main(argv: list[str] | None = None) -> int:
     password = os.environ.get("WIMI_PASSWORD")
     if args.password_stdin:
         password = sys.stdin.readline().rstrip("\n")
-    target_opts = dict(username=args.username, password=password, insecure=args.insecure,
-                       ca_cert=args.ca_cert, plain_http=args.plain_http)
+    target_opts = dict(
+        username=args.username,
+        password=password,
+        insecure=args.insecure,
+        ca_cert=args.ca_cert,
+        plain_http=args.plain_http,
+    )
     common = dict(platform=args.platform, cache_dir=args.cache_dir, log=log)
 
     try:
@@ -103,8 +142,9 @@ def main(argv: list[str] | None = None) -> int:
     for spec in args.base:
         name, sep, ref = spec.partition("=")
         base_specs.append((name.strip(), ref.strip()) if sep and ref else ("", spec))
-    auto = image.annotations.get("org.opencontainers.image.base.name") or \
-        image.labels.get("org.opencontainers.image.base.name")
+    auto = image.annotations.get("org.opencontainers.image.base.name") or image.labels.get(
+        "org.opencontainers.image.base.name"
+    )
     if not base_specs and auto and not args.no_auto_base:
         log(f"Image records its base as {auto}; checking it")
         base_specs.append(("", auto))
@@ -191,12 +231,43 @@ def _write_csv(path: Path, m: dict) -> Path:
     labels = {o["key"]: o["label"] for o in m["origins"]}
     with open(path, "w", newline="", encoding="utf-8") as f:
         w = csv.writer(f)
-        w.writerow(["component", "version", "type", "supplier", "added_by", "layer", "change", "previous_version",
-                    "managed_by", "location", "license", "concerns", "evidence", "purl"])
+        w.writerow(
+            [
+                "component",
+                "version",
+                "type",
+                "supplier",
+                "added_by",
+                "layer",
+                "change",
+                "previous_version",
+                "managed_by",
+                "location",
+                "license",
+                "concerns",
+                "evidence",
+                "purl",
+            ]
+        )
         for c in m["components"]:
-            w.writerow([c["name"], c["version"], c["type_label"], c["supplier"], labels.get(c["origin"], c["origin"]),
-                        c["layer"] + 1, c["change"], c["previous_version"], c["managed_by"], "; ".join(c["paths"]),
-                        c["license"], "; ".join(f["message"] for f in c["flags"]), "; ".join(c["evidence"]), c["purl"]])
+            w.writerow(
+                [
+                    c["name"],
+                    c["version"],
+                    c["type_label"],
+                    c["supplier"],
+                    labels.get(c["origin"], c["origin"]),
+                    c["layer"] + 1,
+                    c["change"],
+                    c["previous_version"],
+                    c["managed_by"],
+                    "; ".join(c["paths"]),
+                    c["license"],
+                    "; ".join(f["message"] for f in c["flags"]),
+                    "; ".join(c["evidence"]),
+                    c["purl"],
+                ]
+            )
     return path
 
 
@@ -204,12 +275,33 @@ def _write_vuln_csv(path: Path, m: dict) -> Path:
     labels = {o["key"]: o["label"] for o in m["origins"]}
     with open(path, "w", newline="", encoding="utf-8") as f:
         w = csv.writer(f)
-        w.writerow(["id", "severity", "package", "installed_version", "fixed_version", "introduced_by", "layer",
-                    "attribution", "title"])
+        w.writerow(
+            [
+                "id",
+                "severity",
+                "package",
+                "installed_version",
+                "fixed_version",
+                "introduced_by",
+                "layer",
+                "attribution",
+                "title",
+            ]
+        )
         for v in m["vulns"]:
-            w.writerow([v["id"], v["severity"], v["package"], v["version"], v["fixed_version"],
-                        labels.get(v["origin"], v["origin"]), "" if v["layer"] is None else v["layer"] + 1,
-                        v["attribution"], v["title"]])
+            w.writerow(
+                [
+                    v["id"],
+                    v["severity"],
+                    v["package"],
+                    v["version"],
+                    v["fixed_version"],
+                    labels.get(v["origin"], v["origin"]),
+                    "" if v["layer"] is None else v["layer"] + 1,
+                    v["attribution"],
+                    v["title"],
+                ]
+            )
     return path
 
 
@@ -220,8 +312,11 @@ def _print_summary(m: dict, written: list[Path]) -> None:
     print(f" {m['image']['name']}", file=out)
     print("=" * width, file=out)
     for o in m["origins"]:
-        layers = f"layers {o['layers'][0]}-{o['layers'][-1]}" if len(o["layers"]) > 1 else \
-            (f"layer {o['layers'][0]}" if o["layers"] else "")
+        layers = (
+            f"layers {o['layers'][0]}-{o['layers'][-1]}"
+            if len(o["layers"]) > 1
+            else (f"layer {o['layers'][0]}" if o["layers"] else "")
+        )
         vul = f"  {o['vulns_total']:>5} vulns" if m["vulns"] is not None else ""
         print(f" {o['label'][:44]:<44} {layers:<13} {o['components']:>6} comps{vul}", file=out)
     print("-" * width, file=out)

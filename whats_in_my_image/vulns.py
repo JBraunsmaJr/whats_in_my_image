@@ -49,10 +49,19 @@ def parse_trivy(doc: dict, diff_index: dict[str, int]) -> list[Vuln]:
     for res in doc.get("Results") or []:
         for v in res.get("Vulnerabilities") or []:
             layer = diff_index.get((v.get("Layer") or {}).get("DiffID", ""))
-            out.append(Vuln(v.get("VulnerabilityID", ""), _sev(v.get("Severity")), v.get("PkgName", ""),
-                            v.get("InstalledVersion", ""), v.get("FixedVersion", "") or "",
-                            (v.get("Title") or v.get("Description") or "")[:240],
-                            v.get("PkgPath") or "", layer, tool="Trivy"))
+            out.append(
+                Vuln(
+                    v.get("VulnerabilityID", ""),
+                    _sev(v.get("Severity")),
+                    v.get("PkgName", ""),
+                    v.get("InstalledVersion", ""),
+                    v.get("FixedVersion", "") or "",
+                    (v.get("Title") or v.get("Description") or "")[:240],
+                    v.get("PkgPath") or "",
+                    layer,
+                    tool="Trivy",
+                )
+            )
     return out
 
 
@@ -67,9 +76,19 @@ def parse_grype(doc: dict, diff_index: dict[str, int]) -> list[Vuln]:
                 layer = diff_index[loc["layerID"]]
                 break
         fix = v.get("fix") or {}
-        out.append(Vuln(v.get("id", ""), _sev(v.get("severity")), a.get("name", ""), a.get("version", ""),
-                        ", ".join(fix.get("versions") or []), (v.get("description") or "")[:240],
-                        path.lstrip("/"), layer, tool="Grype"))
+        out.append(
+            Vuln(
+                v.get("id", ""),
+                _sev(v.get("severity")),
+                a.get("name", ""),
+                a.get("version", ""),
+                ", ".join(fix.get("versions") or []),
+                (v.get("description") or "")[:240],
+                path.lstrip("/"),
+                layer,
+                tool="Grype",
+            )
+        )
     return out
 
 
@@ -79,9 +98,19 @@ def parse_harbor(doc: dict, diff_index: dict[str, int]) -> list[Vuln]:
     for rep in reports:
         for v in rep.get("vulnerabilities") or []:
             layer = diff_index.get((v.get("layer") or {}).get("diff_id", ""))
-            out.append(Vuln(v.get("id", ""), _sev(v.get("severity")), v.get("package", ""), v.get("version", ""),
-                            v.get("fix_version", "") or "", (v.get("description") or "")[:240], "", layer,
-                            tool="Harbor (Trivy)"))
+            out.append(
+                Vuln(
+                    v.get("id", ""),
+                    _sev(v.get("severity")),
+                    v.get("package", ""),
+                    v.get("version", ""),
+                    v.get("fix_version", "") or "",
+                    (v.get("description") or "")[:240],
+                    "",
+                    layer,
+                    tool="Harbor (Trivy)",
+                )
+            )
     return out
 
 
@@ -113,7 +142,8 @@ def run_scanner(which: str, image, log) -> tuple[str, list[Vuln]] | None:
                 cmd = ["trivy", "image", "--input", str(archive), "--format", "json", "--quiet", "--scanners", "vuln"]
             else:
                 cmd = ["grype", f"docker-archive:{archive}", "-o", "json", "-q"]
-            res = subprocess.run(cmd, capture_output=True, text=True)
+            # fixed argv built above, no shell; the scanner binary was resolved with shutil.which
+            res = subprocess.run(cmd, capture_output=True, text=True)  # nosec B603
             if res.returncode != 0 or not res.stdout.strip():
                 log(f"  {tool} failed: {res.stderr.strip()[:400]}")
                 continue
@@ -132,8 +162,10 @@ def fetch_harbor(image, log) -> list[Vuln] | None:
     repo_enc = urllib.parse.quote(urllib.parse.quote(repo, safe=""), safe="")
     diff_index = {d: i for i, d in enumerate(image.diff_ids)}
     for digest in filter(None, (image.manifest_digest, image.index_digest)):
-        url = (f"https://{client.ref.registry}/api/v2.0/projects/{project}/repositories/{repo_enc}"
-               f"/artifacts/{digest}/additions/vulnerabilities")
+        url = (
+            f"https://{client.ref.registry}/api/v2.0/projects/{project}/repositories/{repo_enc}"
+            f"/artifacts/{digest}/additions/vulnerabilities"
+        )
         try:
             doc = client.get_json(url)
         except Exception as e:
@@ -146,6 +178,7 @@ def fetch_harbor(image, log) -> list[Vuln] | None:
 
 
 # --------------------------------------------------------------------------- attribution
+
 
 def _strip_epoch(v: str) -> str:
     return re.sub(r"^\d+:", "", v or "")
@@ -164,8 +197,12 @@ def attribute(vulns: list[Vuln], components: list[dict], per_layer: list[str]) -
     for v in vulns:
         cands = by_name.get(v.package.lower()) or by_name.get(normalize_pypi(v.package)) or []
         ver = _strip_epoch(v.version)
-        exact = [c for c in cands if _strip_epoch(c["version"]) == ver] or \
-                [c for c in cands if ver and (_strip_epoch(c["version"]).startswith(ver) or ver.startswith(_strip_epoch(c["version"]) or "\0"))]
+        exact = [c for c in cands if _strip_epoch(c["version"]) == ver] or [
+            c
+            for c in cands
+            if ver
+            and (_strip_epoch(c["version"]).startswith(ver) or ver.startswith(_strip_epoch(c["version"]) or "\0"))
+        ]
         if v.path and len(exact) > 1:
             exact = [c for c in exact if any(v.path.startswith(p) or p.startswith(v.path) for p in c["paths"])] or exact
         if exact:

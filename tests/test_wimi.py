@@ -54,19 +54,36 @@ def write_oci(root: Path, layers: list[bytes], history: list[str]) -> Path:
         return "sha256:" + h
 
     descs, diff_ids = [], []
-    for l in layers:
-        descs.append({"mediaType": "application/vnd.oci.image.layer.v1.tar+gzip", "digest": put(l), "size": len(l)})
-        diff_ids.append("sha256:" + hashlib.sha256(gzip.decompress(l)).hexdigest())
-    config = {"architecture": "amd64", "os": "linux", "created": "2026-09-01T00:00:00Z",
-              "rootfs": {"type": "layers", "diff_ids": diff_ids},
-              "history": [{"created": "2026-09-01T00:00:00Z", "created_by": h} for h in history]}
+    for lyr in layers:
+        descs.append({"mediaType": "application/vnd.oci.image.layer.v1.tar+gzip", "digest": put(lyr), "size": len(lyr)})
+        diff_ids.append("sha256:" + hashlib.sha256(gzip.decompress(lyr)).hexdigest())
+    config = {
+        "architecture": "amd64",
+        "os": "linux",
+        "created": "2026-09-01T00:00:00Z",
+        "rootfs": {"type": "layers", "diff_ids": diff_ids},
+        "history": [{"created": "2026-09-01T00:00:00Z", "created_by": h} for h in history],
+    }
     cfg = json.dumps(config).encode()
-    manifest = json.dumps({"schemaVersion": 2, "mediaType": "application/vnd.oci.image.manifest.v1+json",
-                           "config": {"mediaType": "application/vnd.oci.image.config.v1+json", "digest": put(cfg),
-                                      "size": len(cfg)}, "layers": descs}).encode()
+    manifest = json.dumps(
+        {
+            "schemaVersion": 2,
+            "mediaType": "application/vnd.oci.image.manifest.v1+json",
+            "config": {"mediaType": "application/vnd.oci.image.config.v1+json", "digest": put(cfg), "size": len(cfg)},
+            "layers": descs,
+        }
+    ).encode()
     md = put(manifest)
-    (root / "index.json").write_text(json.dumps({"schemaVersion": 2, "manifests": [
-        {"mediaType": "application/vnd.oci.image.manifest.v1+json", "digest": md, "size": len(manifest)}]}))
+    (root / "index.json").write_text(
+        json.dumps(
+            {
+                "schemaVersion": 2,
+                "manifests": [
+                    {"mediaType": "application/vnd.oci.image.manifest.v1+json", "digest": md, "size": len(manifest)}
+                ],
+            }
+        )
+    )
     (root / "oci-layout").write_text('{"imageLayoutVersion":"1.0.0"}')
     return root
 
@@ -83,47 +100,63 @@ Architecture: amd64
 Version: 3.0.11-1
 Maintainer: Debian OpenSSL Team <pkg-openssl-devel@lists.debian.org>
 """
-DPKG_APP = DPKG_BASE.replace(b"3.0.11-1", b"3.0.15-1") + b"""
+DPKG_APP = (
+    DPKG_BASE.replace(b"3.0.11-1", b"3.0.15-1")
+    + b"""
 Package: curl
 Status: install ok installed
 Architecture: amd64
 Version: 7.88.1-10
 Maintainer: Alessandro Ghedini <ghedo@debian.org>
 """
+)
 PY_META = b"Metadata-Version: 2.1\nName: requests\nVersion: 2.31.0\nLicense: Apache-2.0\n"
 SITE = "usr/local/lib/python3.12/site-packages"
 
 
 def build_fixture(tmp: Path) -> tuple[Path, Path]:
-    base_layer = make_layer({
-        "etc/os-release": b'ID=debian\nPRETTY_NAME="Debian GNU/Linux 12"\n',
-        "bin": ("symlink", "usr/bin"),
-        "var/lib/dpkg/status": DPKG_BASE,
-        "var/lib/dpkg/info/libc6:amd64.list": b"/.\n/bin/ls\n",
-        "var/lib/dpkg/info/openssl.list": b"/usr/bin/openssl\n",
-        "usr/bin/ls": ELF,
-        "usr/bin/openssl": ELF,
-        "usr/bin/legacy": ELF,
-    })
-    os_layer = make_layer({"var/lib/dpkg/status": DPKG_APP,
-                           "var/lib/dpkg/info/curl.list": b"/usr/bin/curl\n",
-                           "usr/bin/curl": ELF, "usr/bin/openssl": ELF})
-    app_layer = make_layer({
-        f"{SITE}/requests-2.31.0.dist-info/METADATA": PY_META,
-        f"{SITE}/requests-2.31.0.dist-info/INSTALLER": b"pip\n",
-        f"{SITE}/requests-2.31.0.dist-info/RECORD": b"requests/_native.so,,\n",
-        f"{SITE}/requests/_native.so": ELF,
-        "opt/app/node_modules/left-pad/package.json": b'{"name":"left-pad","version":"1.3.0","license":"WTFPL"}',
-        "opt/app/node_modules/left-pad/native.node": ELF,
-        "usr/local/bin/mystery-tool": ELF,
-        "usr/bin/legacy": WH,
-    })
+    base_layer = make_layer(
+        {
+            "etc/os-release": b'ID=debian\nPRETTY_NAME="Debian GNU/Linux 12"\n',
+            "bin": ("symlink", "usr/bin"),
+            "var/lib/dpkg/status": DPKG_BASE,
+            "var/lib/dpkg/info/libc6:amd64.list": b"/.\n/bin/ls\n",
+            "var/lib/dpkg/info/openssl.list": b"/usr/bin/openssl\n",
+            "usr/bin/ls": ELF,
+            "usr/bin/openssl": ELF,
+            "usr/bin/legacy": ELF,
+        }
+    )
+    os_layer = make_layer(
+        {
+            "var/lib/dpkg/status": DPKG_APP,
+            "var/lib/dpkg/info/curl.list": b"/usr/bin/curl\n",
+            "usr/bin/curl": ELF,
+            "usr/bin/openssl": ELF,
+        }
+    )
+    app_layer = make_layer(
+        {
+            f"{SITE}/requests-2.31.0.dist-info/METADATA": PY_META,
+            f"{SITE}/requests-2.31.0.dist-info/INSTALLER": b"pip\n",
+            f"{SITE}/requests-2.31.0.dist-info/RECORD": b"requests/_native.so,,\n",
+            f"{SITE}/requests/_native.so": ELF,
+            "opt/app/node_modules/left-pad/package.json": b'{"name":"left-pad","version":"1.3.0","license":"WTFPL"}',
+            "opt/app/node_modules/left-pad/native.node": ELF,
+            "usr/local/bin/mystery-tool": ELF,
+            "usr/bin/legacy": WH,
+        }
+    )
     base_dir = write_oci(tmp / "base", [base_layer], ["/bin/sh -c #(nop) ADD file:abc in / "])
-    target = write_oci(tmp / "app", [base_layer, os_layer, app_layer], [
-        "/bin/sh -c #(nop) ADD file:abc in / ",
-        "RUN /bin/sh -c apt-get update && apt-get install -y curl && apt-get upgrade -y # buildkit",
-        "RUN /bin/sh -c curl -k https://example.com/install.sh | sh && pip install requests # buildkit",
-    ])
+    target = write_oci(
+        tmp / "app",
+        [base_layer, os_layer, app_layer],
+        [
+            "/bin/sh -c #(nop) ADD file:abc in / ",
+            "RUN /bin/sh -c apt-get update && apt-get install -y curl && apt-get upgrade -y # buildkit",
+            "RUN /bin/sh -c curl -k https://example.com/install.sh | sh && pip install requests # buildkit",
+        ],
+    )
     return target, base_dir
 
 
@@ -139,14 +172,25 @@ class EndToEnd(unittest.TestCase):
     def run_cli(self, *extra) -> dict:
         out = self.tmp / "out"
         with contextlib.redirect_stdout(io.StringIO()):
-            rc = cli.main([f"oci:{self.target}", "--base", f"Iron Bank Debian=oci:{self.base}", "-o", str(out), "-q",
-                           "--cache-dir", str(self.tmp / "cache"), *extra])
+            rc = cli.main(
+                [
+                    f"oci:{self.target}",
+                    "--base",
+                    f"Iron Bank Debian=oci:{self.base}",
+                    "-o",
+                    str(out),
+                    "-q",
+                    "--cache-dir",
+                    str(self.tmp / "cache"),
+                    *extra,
+                ]
+            )
         self.assertEqual(rc, 0)
         return json.loads(next(out.glob("*.json")).read_text())
 
     def test_layers_attributed_to_base_by_digest(self):
         m = self.run_cli()
-        self.assertEqual([l["origin"] for l in m["layers"]], ["base0", "app", "app"])
+        self.assertEqual([lyr["origin"] for lyr in m["layers"]], ["base0", "app", "app"])
         self.assertEqual(m["origins"][0]["label"], "Iron Bank Debian")
         self.assertEqual(m["origins"][0]["match"], "exact layer-digest match")
 
@@ -177,15 +221,38 @@ class EndToEnd(unittest.TestCase):
         self.assertTrue(any("TLS certificate" in x for x in msgs))
 
     def test_vulnerabilities_attributed(self):
-        diff_ids = [l["diff_id"] for l in self.run_cli()["layers"]]
-        trivy = {"Results": [{"Target": "debian", "Vulnerabilities": [
-            {"VulnerabilityID": "CVE-1", "PkgName": "libc6", "InstalledVersion": "2.36-9", "Severity": "HIGH",
-             "Layer": {"DiffID": diff_ids[0]}},
-            {"VulnerabilityID": "CVE-2", "PkgName": "curl", "InstalledVersion": "7.88.1-10", "Severity": "CRITICAL",
-             "FixedVersion": "7.88.1-11", "Layer": {"DiffID": diff_ids[1]}},
-            {"VulnerabilityID": "CVE-3", "PkgName": "requests", "InstalledVersion": "2.31.0", "Severity": "HIGH",
-             "PkgPath": f"{SITE}/requests-2.31.0.dist-info/METADATA"},
-        ]}]}
+        diff_ids = [lyr["diff_id"] for lyr in self.run_cli()["layers"]]
+        trivy = {
+            "Results": [
+                {
+                    "Target": "debian",
+                    "Vulnerabilities": [
+                        {
+                            "VulnerabilityID": "CVE-1",
+                            "PkgName": "libc6",
+                            "InstalledVersion": "2.36-9",
+                            "Severity": "HIGH",
+                            "Layer": {"DiffID": diff_ids[0]},
+                        },
+                        {
+                            "VulnerabilityID": "CVE-2",
+                            "PkgName": "curl",
+                            "InstalledVersion": "7.88.1-10",
+                            "Severity": "CRITICAL",
+                            "FixedVersion": "7.88.1-11",
+                            "Layer": {"DiffID": diff_ids[1]},
+                        },
+                        {
+                            "VulnerabilityID": "CVE-3",
+                            "PkgName": "requests",
+                            "InstalledVersion": "2.31.0",
+                            "Severity": "HIGH",
+                            "PkgPath": f"{SITE}/requests-2.31.0.dist-info/METADATA",
+                        },
+                    ],
+                }
+            ]
+        }
         rp = self.tmp / "trivy.json"
         rp.write_text(json.dumps(trivy))
         m = self.run_cli("--vuln-report", str(rp))
@@ -201,16 +268,33 @@ class EndToEnd(unittest.TestCase):
         other = write_oci(self.tmp / "other", [make_layer({"x": b"y"})], ["ADD x /"])
         out = self.tmp / "out2"
         with contextlib.redirect_stdout(io.StringIO()):
-            cli.main([f"oci:{self.target}", "--base", f"oci:{other}", "-o", str(out), "-q",
-                      "--cache-dir", str(self.tmp / "cache")])
+            cli.main(
+                [
+                    f"oci:{self.target}",
+                    "--base",
+                    f"oci:{other}",
+                    "-o",
+                    str(out),
+                    "-q",
+                    "--cache-dir",
+                    str(self.tmp / "cache"),
+                ]
+            )
         m = json.loads(next(out.glob("*.json")).read_text())
         self.assertTrue(any("NOT built on" in n for n in m["notes"]))
 
 
 class Parsers(unittest.TestCase):
     def test_rpm_header_and_signature(self):
-        sig = bytes([0x89]) + struct.pack(">H", 0) + bytes([4, 0, 1, 8]) + struct.pack(">H", 0) + \
-            struct.pack(">H", 10) + bytes([9, 16]) + bytes.fromhex("199e2f91fd431d51")
+        sig = (
+            bytes([0x89])
+            + struct.pack(">H", 0)
+            + bytes([4, 0, 1, 8])
+            + struct.pack(">H", 0)
+            + struct.pack(">H", 10)
+            + bytes([9, 16])
+            + bytes.fromhex("199e2f91fd431d51")
+        )
         sig = bytes([0x89]) + struct.pack(">H", len(sig) - 3) + sig[3:]
         entries, store = [], b""
 

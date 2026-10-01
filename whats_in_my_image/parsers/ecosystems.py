@@ -8,8 +8,8 @@ import re
 import zipfile
 from email.parser import HeaderParser
 
-
 # --------------------------------------------------------------------------- os-release
+
 
 def parse_os_release(data: bytes) -> dict[str, str]:
     out = {}
@@ -21,6 +21,7 @@ def parse_os_release(data: bytes) -> dict[str, str]:
 
 
 # --------------------------------------------------------------------------- dpkg
+
 
 def parse_dpkg_status(data: bytes) -> list[dict]:
     """Return installed packages from a dpkg status file (or a distroless status.d entry)."""
@@ -45,10 +46,11 @@ def parse_dpkg_status(data: bytes) -> list[dict]:
 
 
 def parse_dpkg_list(data: bytes) -> list[str]:
-    return [l.strip() for l in data.decode("utf-8", "replace").splitlines() if l.strip() not in ("", "/.")]
+    return [lyr.strip() for lyr in data.decode("utf-8", "replace").splitlines() if lyr.strip() not in ("", "/.")]
 
 
 # --------------------------------------------------------------------------- apk
+
 
 def parse_apk_installed(data: bytes) -> list[dict]:
     pkgs = []
@@ -72,6 +74,7 @@ def parse_apk_installed(data: bytes) -> list[dict]:
 
 # --------------------------------------------------------------------------- python
 
+
 def parse_python_metadata(data: bytes) -> dict[str, str]:
     msg = HeaderParser().parsestr(data.decode("utf-8", "replace"))
     out = {k: (msg.get(k) or "") for k in ("Name", "Version", "Summary", "Home-page", "Author", "License")}
@@ -94,6 +97,7 @@ def normalize_pypi(name: str) -> str:
 
 # --------------------------------------------------------------------------- npm
 
+
 def parse_package_json(data: bytes) -> dict | None:
     try:
         doc = json.loads(data.decode("utf-8", "replace"))
@@ -110,8 +114,14 @@ def parse_package_json(data: bytes) -> dict | None:
     repo = doc.get("repository") or ""
     if isinstance(repo, dict):
         repo = repo.get("url", "")
-    return {"name": str(doc["name"]), "version": str(doc["version"]), "license": str(lic), "author": str(author),
-            "resolved": str(doc.get("_resolved") or ""), "repository": str(repo)}
+    return {
+        "name": str(doc["name"]),
+        "version": str(doc["version"]),
+        "license": str(lic),
+        "author": str(author),
+        "resolved": str(doc.get("_resolved") or ""),
+        "repository": str(repo),
+    }
 
 
 # --------------------------------------------------------------------------- java
@@ -147,8 +157,15 @@ def parse_jar(data: bytes, filename: str, depth: int = 0) -> list[dict]:
             except (zipfile.BadZipFile, OSError, KeyError):
                 continue
             if props.get("artifactId") and props.get("version"):
-                found.append({"group": props.get("groupId", ""), "artifact": props["artifactId"],
-                              "version": props["version"], "inner": filename, "evidence": "pom.properties"})
+                found.append(
+                    {
+                        "group": props.get("groupId", ""),
+                        "artifact": props["artifactId"],
+                        "version": props["version"],
+                        "inner": filename,
+                        "evidence": "pom.properties",
+                    }
+                )
         if not found:
             title = manifest.get("Implementation-Title") or manifest.get("Bundle-SymbolicName", "").split(";")[0]
             version = manifest.get("Implementation-Version") or manifest.get("Bundle-Version", "")
@@ -159,8 +176,15 @@ def parse_jar(data: bytes, filename: str, depth: int = 0) -> list[dict]:
             if m and not title:
                 title = m.group("name")
             if title:
-                found.append({"group": vendor, "artifact": title, "version": version or "unknown",
-                              "inner": filename, "evidence": "MANIFEST.MF" if manifest else "file name"})
+                found.append(
+                    {
+                        "group": vendor,
+                        "artifact": title,
+                        "version": version or "unknown",
+                        "inner": filename,
+                        "evidence": "MANIFEST.MF" if manifest else "file name",
+                    }
+                )
         for n in nested:
             try:
                 found.extend(parse_jar(zf.read(n), f"{filename}!/{n}", depth + 1))

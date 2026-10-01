@@ -26,15 +26,21 @@ def parse(data: bytes) -> dict | None:
     flags = data[i + 15]
     if not flags & 2:
         # Pre-1.18 binaries store pointers instead of inline strings.
-        return {"go_version": "unknown (built with Go older than 1.18)", "path": "", "main": None,
-                "deps": [], "settings": {}, "legacy": True}
+        return {
+            "go_version": "unknown (built with Go older than 1.18)",
+            "path": "",
+            "main": None,
+            "deps": [],
+            "settings": {},
+            "legacy": True,
+        }
     try:
         pos = i + 32
         n, pos = _uvarint(data, pos)
-        version = data[pos:pos + n].decode("utf-8", "replace")
+        version = data[pos : pos + n].decode("utf-8", "replace")
         pos += n
         n, pos = _uvarint(data, pos)
-        mod = data[pos:pos + n].decode("utf-8", "replace")
+        mod = data[pos : pos + n].decode("utf-8", "replace")
     except (IndexError, ValueError):
         return None
     if len(mod) >= 33 and mod[-17] == "\n":

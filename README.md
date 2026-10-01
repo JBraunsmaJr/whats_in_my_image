@@ -142,4 +142,10 @@ provenance:
 
 ```bash
 python3 -m unittest discover -s tests     # offline tests with synthetic images
+ruff check . && ruff format --check .     # lint and formatting (ruff 0.16)
+bandit -c pyproject.toml -r whats_in_my_image
 ```
+
+GitHub Actions runs these on every push and pull request, along with tests on Python 3.9 to 3.14, CodeQL,
+Trivy, Gitleaks, workflow security checks and OpenSSF Scorecard. Findings appear under the repository's
+**Security → Code scanning** tab. See [SECURITY.md](SECURITY.md) for details and for how to report a vulnerability.

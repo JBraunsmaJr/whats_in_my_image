@@ -27,12 +27,14 @@ INDEX_TYPES = {
     "application/vnd.oci.image.index.v1+json",
     "application/vnd.docker.distribution.manifest.list.v2+json",
 }
-MANIFEST_ACCEPT = ", ".join([
-    "application/vnd.oci.image.index.v1+json",
-    "application/vnd.docker.distribution.manifest.list.v2+json",
-    "application/vnd.oci.image.manifest.v1+json",
-    "application/vnd.docker.distribution.manifest.v2+json",
-])
+MANIFEST_ACCEPT = ", ".join(
+    [
+        "application/vnd.oci.image.index.v1+json",
+        "application/vnd.docker.distribution.manifest.list.v2+json",
+        "application/vnd.oci.image.manifest.v1+json",
+        "application/vnd.docker.distribution.manifest.v2+json",
+    ]
+)
 
 
 class RegistryError(Exception):
@@ -68,7 +70,7 @@ def parse_ref(ref: str) -> ImageRef:
     ref = ref.strip()
     for prefix in ("docker://", "https://", "http://"):
         if ref.startswith(prefix):
-            ref = ref[len(prefix):]
+            ref = ref[len(prefix) :]
     digest = None
     if "@" in ref:
         ref, digest = ref.split("@", 1)
@@ -96,6 +98,7 @@ def parse_ref(ref: str) -> ImageRef:
 
 # --------------------------------------------------------------------------- credentials
 
+
 def _auth_files() -> list[Path]:
     files = []
     if os.environ.get("REGISTRY_AUTH_FILE"):
@@ -111,8 +114,7 @@ def _auth_files() -> list[Path]:
 
 def find_credentials(registry: str) -> tuple[str, str] | None:
     """Look up saved credentials from `docker login` / `podman login`."""
-    keys = {registry, f"https://{registry}", f"http://{registry}",
-            f"https://{registry}/v1/", f"https://{registry}/v2/"}
+    keys = {registry, f"https://{registry}", f"http://{registry}", f"https://{registry}/v1/", f"https://{registry}/v2/"}
     if registry == "docker.io":
         keys |= {"https://index.docker.io/v1/", "index.docker.io", "registry-1.docker.io"}
     for f in _auth_files():
@@ -144,7 +146,10 @@ def _cred_helper(store: str, registry: str) -> tuple[str, str] | None:
         servers.append("https://index.docker.io/v1/")
     for server in servers:
         try:
-            out = subprocess.run([exe, "get"], input=server, capture_output=True, text=True, timeout=30)
+            # fixed argv, no shell; exe is a docker-credential-* helper found on PATH
+            out = subprocess.run(  # nosec B603
+                [exe, "get"], input=server, capture_output=True, text=True, timeout=30
+            )
         except (OSError, subprocess.SubprocessError):
             return None
         if out.returncode == 0:
@@ -157,6 +162,7 @@ def _cred_helper(store: str, registry: str) -> tuple[str, str] | None:
 
 
 # --------------------------------------------------------------------------- HTTP
+
 
 class _StripAuthRedirect(urllib.request.HTTPRedirectHandler):
     """Blob downloads often redirect to S3/CDN; those reject our registry token."""
@@ -187,9 +193,17 @@ def make_ssl_context(insecure: bool = False, ca_cert: str | None = None) -> ssl.
 
 
 class RegistryClient:
-    def __init__(self, ref: ImageRef, *, username: str | None = None, password: str | None = None,
-                 insecure: bool = False, ca_cert: str | None = None, plain_http: bool = False,
-                 timeout: int = 120):
+    def __init__(
+        self,
+        ref: ImageRef,
+        *,
+        username: str | None = None,
+        password: str | None = None,
+        insecure: bool = False,
+        ca_cert: str | None = None,
+        plain_http: bool = False,
+        timeout: int = 120,
+    ):
         self.ref = ref
         if username is None:
             found = find_credentials(ref.registry)
@@ -197,7 +211,8 @@ class RegistryClient:
                 username, password = found
         self.username, self.password = username, password
         self._opener = urllib.request.build_opener(
-            urllib.request.HTTPSHandler(context=make_ssl_context(insecure, ca_cert)), _StripAuthRedirect())
+            urllib.request.HTTPSHandler(context=make_ssl_context(insecure, ca_cert)), _StripAuthRedirect()
+        )
         self._scheme = "http" if plain_http else "https"
         self._auth: str | None = None
         self.timeout = timeout
@@ -239,8 +254,10 @@ class RegistryClient:
         basic = self._basic()
         if scheme.lower() == "basic":
             if not basic:
-                raise RegistryError(f"{self.ref.registry} requires a login. Run `docker login {self.ref.registry}` "
-                                    "or pass --username / --password-stdin.")
+                raise RegistryError(
+                    f"{self.ref.registry} requires a login. Run `docker login {self.ref.registry}` "
+                    "or pass --username / --password-stdin."
+                )
             self._auth = basic
             return
         if scheme.lower() != "bearer" or "realm" not in params:
@@ -300,7 +317,7 @@ class RegistryClient:
         dest.parent.mkdir(parents=True, exist_ok=True)
         algo, _, expected = digest.partition(":")
         tmp = dest.with_name(dest.name + ".part")
-        for attempt in range(3):  # CDNs occasionally cut a transfer short
+        for _attempt in range(3):  # CDNs occasionally cut a transfer short
             h = hashlib.new(algo)
             done = 0
             try:
@@ -317,8 +334,9 @@ class RegistryClient:
                 tmp.replace(dest)
                 return dest
         tmp.unlink(missing_ok=True)
-        raise RegistryError(f"Integrity check failed for layer {digest} after 3 attempts - "
-                            "the download was corrupted or tampered with")
+        raise RegistryError(
+            f"Integrity check failed for layer {digest} after 3 attempts - the download was corrupted or tampered with"
+        )
 
     def get_json(self, url: str) -> dict:
         """GET an arbitrary JSON URL on the same host with basic auth (used for the Harbor API)."""
@@ -344,6 +362,7 @@ def pick_platform(manifests: list[dict], platform: str) -> dict:
     real = [m for m in manifests if (m.get("platform") or {}).get("os") != "unknown"]
     if len(real) == 1:
         return real[0]
-    available = sorted({f"{m['platform'].get('os')}/{m['platform'].get('architecture')}"
-                        for m in real if m.get("platform")})
+    available = sorted(
+        {f"{m['platform'].get('os')}/{m['platform'].get('architecture')}" for m in real if m.get("platform")}
+    )
     raise RegistryError(f"Image has no {platform} variant. Available: {', '.join(available)}. Use --platform.")

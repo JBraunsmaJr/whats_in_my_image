@@ -5,7 +5,10 @@ from __future__ import annotations
 import re
 
 _RULES: list[tuple[str, str]] = [
-    (r"\b(dnf|yum|microdnf|tdnf)\b[^;&|]*\b(update|upgrade|distro-sync)\b", "Updated operating-system packages to newer versions"),
+    (
+        r"\b(dnf|yum|microdnf|tdnf)\b[^;&|]*\b(update|upgrade|distro-sync)\b",
+        "Updated operating-system packages to newer versions",
+    ),
     (r"\b(dnf|yum|microdnf|tdnf)\b[^;&|]*\b(install|reinstall)\b", "Installed operating-system packages (dnf/yum)"),
     (r"\brpm\b\s+(-[a-zA-Z]*[iU]|--install|--upgrade)", "Installed RPM package files directly (rpm)"),
     (r"\b(apt-get|apt)\b[^;&|]*\b(upgrade|dist-upgrade)\b", "Updated operating-system packages to newer versions"),
@@ -31,24 +34,56 @@ _RULES: list[tuple[str, str]] = [
 ]
 
 _RISKS: list[tuple[str, str, str]] = [
-    (r"(curl|wget)[^|;&]*\|\s*(sudo\s+)?(ba|z|da)?sh\b", "high",
-     "Downloads a script from the internet and runs it immediately (no verification)"),
-    (r"--nogpgcheck|gpgcheck\s*=\s*0|--no-gpg-checks|--allow-unauthenticated|AllowUnauthenticated|--allow-untrusted",
-     "high", "Package signature checking was turned off"),
-    (r"\bcurl\b[^;&|]*\s(-k|--insecure)\b|wget[^;&|]*--no-check-certificate|sslverify\s*=\s*(0|false)|strict-ssl\s+false",
-     "high", "TLS certificate checking was turned off for a download"),
+    (
+        r"(curl|wget)[^|;&]*\|\s*(sudo\s+)?(ba|z|da)?sh\b",
+        "high",
+        "Downloads a script from the internet and runs it immediately (no verification)",
+    ),
+    (
+        r"--nogpgcheck|gpgcheck\s*=\s*0|--no-gpg-checks|--allow-unauthenticated|AllowUnauthenticated|--allow-untrusted",
+        "high",
+        "Package signature checking was turned off",
+    ),
+    (
+        r"\bcurl\b[^;&|]*\s(-k|--insecure)\b|wget[^;&|]*--no-check-certificate|sslverify\s*=\s*(0|false)|strict-ssl\s+false",
+        "high",
+        "TLS certificate checking was turned off for a download",
+    ),
     (r"--trusted-host", "medium", "Python packages were fetched from a host with TLS checks disabled"),
-    (r"--extra-index-url|--index-url|-i\s+https?://", "medium",
-     "Python packages were pulled from a non-default package index"),
+    (
+        r"--extra-index-url|--index-url|-i\s+https?://",
+        "medium",
+        "Python packages were pulled from a non-default package index",
+    ),
     (r"\bchmod\b[^;&|]*\b(0?777|a\+rwx|o\+w)\b", "medium", "Files were made writable by every user (chmod 777)"),
-    (r"\b(curl|wget)\b|\bADD\s+https?://", "medium",
-     "Content was downloaded directly from the internet, bypassing vendor-signed packages"),
-    (r"\bsetcap\b|\bchmod\b[^;&|]*\b[ug]\+s\b|\bchmod\b[^;&|]*\b[2467][0-7]{3}\b", "low",
-     "Elevated privileges (setuid / capabilities) were granted to a program"),
+    (
+        r"\b(curl|wget)\b|\bADD\s+https?://",
+        "medium",
+        "Content was downloaded directly from the internet, bypassing vendor-signed packages",
+    ),
+    (
+        r"\bsetcap\b|\bchmod\b[^;&|]*\b[ug]\+s\b|\bchmod\b[^;&|]*\b[2467][0-7]{3}\b",
+        "low",
+        "Elevated privileges (setuid / capabilities) were granted to a program",
+    ),
 ]
 
-METADATA_INSTRUCTIONS = {"LABEL", "ENV", "CMD", "ENTRYPOINT", "EXPOSE", "ARG", "VOLUME", "SHELL", "HEALTHCHECK",
-                         "ONBUILD", "STOPSIGNAL", "USER", "WORKDIR", "MAINTAINER"}
+METADATA_INSTRUCTIONS = {
+    "LABEL",
+    "ENV",
+    "CMD",
+    "ENTRYPOINT",
+    "EXPOSE",
+    "ARG",
+    "VOLUME",
+    "SHELL",
+    "HEALTHCHECK",
+    "ONBUILD",
+    "STOPSIGNAL",
+    "USER",
+    "WORKDIR",
+    "MAINTAINER",
+}
 URL_RE = re.compile(r"https?://[^\s'\"\\;|&)]+")
 
 
@@ -67,8 +102,24 @@ def clean_command(created_by: str) -> tuple[str, str]:
             return ins.upper(), body.strip()
         return "RUN", s
     ins, _, body = s.partition(" ")
-    if ins.upper() in ("RUN", "COPY", "ADD", "WORKDIR", "ENV", "USER", "LABEL", "CMD", "ENTRYPOINT",
-                       "EXPOSE", "ARG", "VOLUME", "SHELL", "HEALTHCHECK", "ONBUILD", "STOPSIGNAL"):
+    if ins.upper() in (
+        "RUN",
+        "COPY",
+        "ADD",
+        "WORKDIR",
+        "ENV",
+        "USER",
+        "LABEL",
+        "CMD",
+        "ENTRYPOINT",
+        "EXPOSE",
+        "ARG",
+        "VOLUME",
+        "SHELL",
+        "HEALTHCHECK",
+        "ONBUILD",
+        "STOPSIGNAL",
+    ):
         return ins.upper(), body.strip()
     return ("RUN" if s else ""), s
 
@@ -91,7 +142,9 @@ def describe(created_by: str, comment: str = "") -> dict:
         elif frm:
             actions.append(f"Copied build output from an earlier build stage ('{frm.group(1)}') into {dest}")
         else:
-            actions.append(f"Copied files from the build workspace into {dest}" if dest else "Copied files into the image")
+            actions.append(
+                f"Copied files from the build workspace into {dest}" if dest else "Copied files into the image"
+            )
     elif ins == "RUN" and body.startswith("#"):
         actions.append("Root filesystem created by the image publisher's build tooling")
     elif ins == "RUN":
@@ -107,7 +160,9 @@ def describe(created_by: str, comment: str = "") -> dict:
     seen = set()
     for pattern, sev, msg in _RISKS:
         if re.search(pattern, text, re.I) and msg not in seen:
-            if msg.startswith("Content was downloaded") and any(r["message"].startswith("Downloads a script") for r in risks):
+            if msg.startswith("Content was downloaded") and any(
+                r["message"].startswith("Downloads a script") for r in risks
+            ):
                 continue
             seen.add(msg)
             risks.append({"severity": sev, "message": msg})
