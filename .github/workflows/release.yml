@@ -41,7 +41,10 @@ jobs:
           mod=$(python -c "import whats_in_my_image as m; print(m.__version__)")
           tag="${GITHUB_REF_NAME#v}"
           echo "tag=$tag pyproject=$pkg module=$mod"
-          [ "$tag" = "$pkg" ] && [ "$tag" = "$mod" ] || { echo "::error::Tag $GITHUB_REF_NAME does not match version $pkg/$mod"; exit 1; }
+          if [ "$tag" != "$pkg" ] || [ "$tag" != "$mod" ]; then
+            echo "::error::Tag $GITHUB_REF_NAME does not match version $pkg/$mod"
+            exit 1
+          fi
       - run: python -m unittest discover -s tests
       - run: python -m pip install build==1.6.1
       - run: python -m build
