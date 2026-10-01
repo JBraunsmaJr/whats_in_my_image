@@ -1,2 +1,4 @@
 *
 !dist/*.whl
+!LICENSE
+!NOTICE

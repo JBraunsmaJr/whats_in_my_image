@@ -183,3 +183,7 @@ Trivy, Gitleaks, workflow security checks and OpenSSF Scorecard. Findings appear
 
 The Release workflow refuses to publish if the tag does not match the package version, or if the image has a
 critical vulnerability with a fix available.
+
+## License
+
+Apache License 2.0. See [LICENSE](LICENSE) and [NOTICE](NOTICE).

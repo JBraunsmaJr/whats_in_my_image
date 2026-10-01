@@ -9,8 +9,10 @@ FROM ${BASE_IMAGE}
 ARG BASE_IMAGE
 LABEL org.opencontainers.image.title="What's In My Image" \
       org.opencontainers.image.description="Trace every component of a container image to the base image or build step that put it there" \
+      org.opencontainers.image.licenses="Apache-2.0" \
       org.opencontainers.image.base.name="${BASE_IMAGE}"
 
+COPY LICENSE NOTICE /licenses/
 COPY --chown=1001:0 dist/*.whl /tmp/wheels/
 RUN pip install --no-cache-dir --no-index /tmp/wheels/*.whl && rm -rf /tmp/wheels
 

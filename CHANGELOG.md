@@ -22,4 +22,5 @@ First public release.
 - Image sources: any OCI registry (Harbor, Iron Bank, Docker Hub, Red Hat, Quay ...), `docker save` archives,
   OCI layouts, and the local Docker or Podman engine.
 - Standard library only, Python 3.9+.
+- Licensed under the Apache License 2.0.
 - Container image on GHCR, signed with cosign, with SLSA build provenance and CycloneDX SBOMs.

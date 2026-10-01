@@ -1,5 +1,5 @@
 [build-system]
-requires = ["setuptools>=61"]
+requires = ["setuptools>=77"]  # SPDX license metadata (PEP 639)
 build-backend = "setuptools.build_meta"
 
 [project]
@@ -7,6 +7,8 @@ name = "whats-in-my-image"
 version = "0.1.0"
 description = "Trace every package, library and program in a container image to the base image or build step that put it there."
 readme = "README.md"
+license = "Apache-2.0"
+license-files = ["LICENSE", "NOTICE"]
 requires-python = ">=3.9"
 dependencies = []  # standard library only, so it installs on air-gapped hosts
 
