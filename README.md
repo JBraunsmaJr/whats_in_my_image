@@ -9,7 +9,7 @@ executive (CISO/CIO) can read in two minutes and an engineer can act on.
 
 Illustrative terminal summary (the HTML report has the full detail):
 
-```
+```text
 ==============================================================================
  harbor.example.mil/payments/api:2.4
 ==============================================================================
@@ -25,7 +25,7 @@ Illustrative terminal summary (the HTML report has the full detail):
 ## Why the answer can be trusted
 
 | Question | How `wimi` answers it | Strength of evidence |
-|---|---|---|
+| --- | --- | --- |
 | Which layers came from the base image? | Layer SHA-256 digests compared with the base image's digests | **Cryptographic proof** (identical digest = identical bytes) |
 | Who installed each OS package? | The RPM/dpkg/apk database is read at *every* layer, so each package is credited to the layer that installed its current version | Exact |
 | Who built and signed each RPM? | Signing key ID from the package's OpenPGP signature, Vendor field, build host | Exact (e.g. `199E2F91FD431D51` = Red Hat release key 2) |
@@ -87,7 +87,7 @@ and marks the result as an estimate.
 All files go to `./wimi-reports/` (change with `-o`):
 
 | File | For |
-|---|---|
+| --- | --- |
 | `provenance-<image>.html` | **Executive report.** One self-contained file to email, attach to a ticket, or print to PDF. |
 | `provenance-<image>.json` | Full data for automation / dashboards |
 | `provenance-<image>-components.csv` | Inventory for spreadsheets: supplier, layer, evidence and concerns for every component |
@@ -104,22 +104,6 @@ The HTML report has these sections:
 5. **Vulnerabilities**: each CVE with severity, fix status, and the party that introduced it (filterable).
 6. **Full inventory**: every component with its supplier and the evidence behind that attribution (searchable).
 7. **Method & glossary**: how the conclusions were reached, written for non-specialists.
-
-## Sample report (GitHub Pages)
-
-`docs/index.html` is a complete report from a real scan of the public `python:3.12-slim-bookworm` image, built on
-Debian 12 and scanned with Trivy. To publish it, open the repository's **Settings → Pages** on GitHub, choose
-**Deploy from a branch**, and select branch `main`, folder `/docs`. It will appear at
-`https://<user>.github.io/<repo>/`.
-
-To regenerate it (Trivy must be installed):
-
-```bash
-wimi python:3.12-slim-bookworm --base "Debian 12 base=debian:bookworm-slim" --app-name "Python image build" \
-     --scan --subtitle "Sample report · scan of the public python:3.12-slim-bookworm image" \
-     -o docs --formats html
-mv docs/provenance-python_3.12-slim-bookworm.html docs/index.html
-```
 
 ## Running in CI (GitLab example)
 
