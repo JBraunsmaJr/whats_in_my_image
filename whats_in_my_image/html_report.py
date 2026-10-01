@@ -278,7 +278,7 @@ def render(m: dict) -> str:
 <div id="tip" role="tooltip"></div>
 <header class="hero">
   <div class="wrap">
-    <div class="eyebrow">Container image provenance report</div>
+    <div class="eyebrow">{e(m.get('subtitle') or 'Container image provenance report')}</div>
     <h1>Where did everything in this image come from?</h1>
     <div class="imgname mono">{e(img['name'])}</div>
     <dl class="meta">{meta_html}</dl>

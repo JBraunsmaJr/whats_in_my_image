@@ -56,6 +56,8 @@ def _parser() -> argparse.ArgumentParser:
     g = p.add_argument_group("output")
     g.add_argument("-o", "--output-dir", type=Path, default=Path("wimi-reports"))
     g.add_argument("--formats", default="html,json,csv", help="comma list of html,json,csv (default: %(default)s)")
+    g.add_argument("--subtitle", default="Container image provenance report",
+                   help="line shown above the report heading, e.g. 'Prepared for CISO review'")
     g.add_argument("-q", "--quiet", action="store_true", help="only print the final summary")
     g = p.add_argument_group("registry access")
     g.add_argument("--platform", default="linux/amd64", help="platform for multi-arch images (default: %(default)s)")
@@ -151,6 +153,7 @@ def main(argv: list[str] | None = None) -> int:
         vulnmod.attribute(found_vulns, [vars(c) for c in analyzer.components], per_layer)
 
     model = report.build(image, walker, analyzer, origins, per_layer, notes, found_vulns, tool, args.app_name)
+    model["subtitle"] = args.subtitle
 
     # ---- write outputs
     args.output_dir.mkdir(parents=True, exist_ok=True)

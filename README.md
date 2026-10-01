@@ -105,6 +105,22 @@ The HTML report has these sections:
 6. **Full inventory**: every component with its supplier and the evidence behind that attribution (searchable).
 7. **Method & glossary**: how the conclusions were reached, written for non-specialists.
 
+## Sample report (GitHub Pages)
+
+`docs/index.html` is a complete report from a real scan of the public `python:3.12-slim-bookworm` image, built on
+Debian 12 and scanned with Trivy. To publish it, open the repository's **Settings → Pages** on GitHub, choose
+**Deploy from a branch**, and select branch `main`, folder `/docs`. It will appear at
+`https://<user>.github.io/<repo>/`.
+
+To regenerate it (Trivy must be installed):
+
+```bash
+wimi python:3.12-slim-bookworm --base "Debian 12 base=debian:bookworm-slim" --app-name "Python image build" \
+     --scan --subtitle "Sample report · scan of the public python:3.12-slim-bookworm image" \
+     -o docs --formats html
+mv docs/provenance-python_3.12-slim-bookworm.html docs/index.html
+```
+
 ## Running in CI (GitLab example)
 
 ```yaml
