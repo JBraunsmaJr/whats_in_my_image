@@ -19,6 +19,37 @@ from .parsers.ecosystems import normalize_pypi
 
 SEVERITIES = ["CRITICAL", "HIGH", "MEDIUM", "LOW", "UNKNOWN"]
 
+# What the software vendor says about fixing each vulnerability, normalised across scanners.
+# Ordered from most to least actionable; the labels are what the report shows.
+FIX_STATUSES = {
+    "fixed": "Fix available",
+    "affected": "No fix released yet",
+    "fix_deferred": "Fix deferred by vendor",
+    "will_not_fix": "Vendor will not fix",
+    "end_of_life": "No longer supported by vendor",
+    "under_investigation": "Vendor still investigating",
+    "not_affected": "Vendor says not affected",
+    "unknown": "No fix listed",
+}
+_FIX_ALIASES = {
+    "not_fixed": "affected",  # Grype
+    "wont_fix": "will_not_fix",  # Grype
+    "won't_fix": "will_not_fix",
+    "deferred": "fix_deferred",
+    "eol": "end_of_life",
+}
+
+
+def fix_status(raw: str | None, fixed_version: str) -> str:
+    """Normalise a scanner's fix state. A known fixed version always means a fix is available."""
+    if fixed_version:
+        return "fixed"
+    s = (raw or "").strip().lower().replace("-", "_").replace(" ", "_")
+    s = _FIX_ALIASES.get(s, s)
+    if s == "fixed":  # status says fixed but no version was given
+        return "fixed"
+    return s if s in FIX_STATUSES else "unknown"
+
 
 @dataclass
 class Vuln:
@@ -34,6 +65,7 @@ class Vuln:
     origin: str = "unknown"
     tool: str = ""
     attribution: str = ""  # how the layer was determined
+    fix_status: str = "unknown"  # key of FIX_STATUSES
 
     def to_dict(self) -> dict:
         return asdict(self)
@@ -49,17 +81,19 @@ def parse_trivy(doc: dict, diff_index: dict[str, int]) -> list[Vuln]:
     for res in doc.get("Results") or []:
         for v in res.get("Vulnerabilities") or []:
             layer = diff_index.get((v.get("Layer") or {}).get("DiffID", ""))
+            fixed = v.get("FixedVersion", "") or ""
             out.append(
                 Vuln(
                     v.get("VulnerabilityID", ""),
                     _sev(v.get("Severity")),
                     v.get("PkgName", ""),
                     v.get("InstalledVersion", ""),
-                    v.get("FixedVersion", "") or "",
+                    fixed,
                     (v.get("Title") or v.get("Description") or "")[:240],
                     v.get("PkgPath") or "",
                     layer,
                     tool="Trivy",
+                    fix_status=fix_status(v.get("Status"), fixed),
                 )
             )
     return out
@@ -76,17 +110,19 @@ def parse_grype(doc: dict, diff_index: dict[str, int]) -> list[Vuln]:
                 layer = diff_index[loc["layerID"]]
                 break
         fix = v.get("fix") or {}
+        fixed = ", ".join(fix.get("versions") or [])
         out.append(
             Vuln(
                 v.get("id", ""),
                 _sev(v.get("severity")),
                 a.get("name", ""),
                 a.get("version", ""),
-                ", ".join(fix.get("versions") or []),
+                fixed,
                 (v.get("description") or "")[:240],
                 path.lstrip("/"),
                 layer,
                 tool="Grype",
+                fix_status=fix_status(fix.get("state"), fixed),
             )
         )
     return out
@@ -109,6 +145,8 @@ def parse_harbor(doc: dict, diff_index: dict[str, int]) -> list[Vuln]:
                     "",
                     layer,
                     tool="Harbor (Trivy)",
+                    # Harbor's report carries no vendor status, only a fixed version when there is one.
+                    fix_status=fix_status(None, v.get("fix_version", "") or ""),
                 )
             )
     return out

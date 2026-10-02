@@ -8,7 +8,7 @@ from datetime import datetime, timezone
 from . import __version__, describe
 from .analyze import OS_ECOSYSTEMS, TYPE_LABELS, as_dict
 from .sources import human_size
-from .vulns import SEVERITIES
+from .vulns import FIX_STATUSES, SEVERITIES
 
 SEV_RANK = {"high": 0, "medium": 1, "low": 2, "info": 3}
 
@@ -93,7 +93,8 @@ def build(image, walker, analyzer, origins, per_layer, notes, vulns, vuln_tool, 
                 "by_type": dict(Counter(c["ecosystem"] for c in mine)),
                 "vulns": {s: sum(1 for v in ov if v["severity"] == s) for s in SEVERITIES},
                 "vulns_total": len(ov),
-                "vulns_fixable": sum(1 for v in ov if v["fixed_version"]),
+                "vulns_fixable": sum(1 for v in ov if v["fix_status"] == "fixed"),
+                "vulns_by_fix": dict(Counter(v["fix_status"] for v in ov)),
             }
         )
     if vdicts and any(v["origin"] == "unknown" for v in vdicts) and "unknown" not in origin_by_key:
@@ -112,7 +113,8 @@ def build(image, walker, analyzer, origins, per_layer, notes, vulns, vuln_tool, 
                 "by_type": {},
                 "vulns": {s: sum(1 for v in ov if v["severity"] == s) for s in SEVERITIES},
                 "vulns_total": len(ov),
-                "vulns_fixable": sum(1 for v in ov if v["fixed_version"]),
+                "vulns_fixable": sum(1 for v in ov if v["fix_status"] == "fixed"),
+                "vulns_by_fix": dict(Counter(v["fix_status"] for v in ov)),
             }
         )
 
@@ -143,6 +145,7 @@ def build(image, walker, analyzer, origins, per_layer, notes, vulns, vuln_tool, 
         "notes": notes + analyzer.notes,
         "removed_packages": analyzer.removed_packages,
         "type_labels": TYPE_LABELS,
+        "fix_status_labels": FIX_STATUSES,
     }
     model["takeaways"] = _takeaways(model)
     return model
@@ -184,6 +187,25 @@ def _is_base_warning(note: str) -> bool:
         or "Only the first" in note
         or note.startswith(("Possible unidentified base", "Outdated base"))
     )
+
+
+def _no_fix_reasons(vulns) -> str:
+    """'the vendor has not released one yet for 40, has deferred 12 and will not fix 5'"""
+    c = Counter(v["fix_status"] for v in vulns)
+    phrases = [
+        ("affected", "has not released one yet for {}"),
+        ("fix_deferred", "has deferred {}"),
+        ("will_not_fix", "will not fix {}"),
+        ("end_of_life", "no longer supports {}"),
+        ("under_investigation", "is still investigating {}"),
+    ]
+    parts = [text.format(f"{c[k]:,}") for k, text in phrases if c[k]]
+    if not parts:
+        return "the scanner lists no fixed version"
+    sentence = ", ".join(parts[:-1]) + (" and " if len(parts) > 1 else "") + parts[-1]
+    if c["unknown"]:
+        sentence += f"; no reason is given for {c['unknown']:,}"
+    return "the vendor " + sentence
 
 
 def _findings(comps, layers, vulns, origin_by_key, notes) -> list[dict]:
@@ -238,7 +260,7 @@ def _findings(comps, layers, vulns, origin_by_key, notes) -> list[dict]:
     if vulns:
         for okey in {v["origin"] for v in vulns}:
             serious = [v for v in vulns if v["origin"] == okey and v["severity"] in ("CRITICAL", "HIGH")]
-            fixable = [v for v in serious if v["fixed_version"]]
+            fixable = [v for v in serious if v["fix_status"] == "fixed"]
             if fixable:
                 kind = origin_by_key[okey].kind if okey in origin_by_key else "unknown"
                 how = (
@@ -257,6 +279,43 @@ def _findings(comps, layers, vulns, origin_by_key, notes) -> list[dict]:
                         "items": [
                             f"{v['id']}  {v['package']} {v['version']} -> {v['fixed_version']}" for v in fixable[:200]
                         ],
+                    }
+                )
+        sev_rank = {s: i for i, s in enumerate(SEVERITIES)}
+        vendor_findings = {
+            "end_of_life": (
+                "high",
+                "vulnerabilities in software the vendor no longer supports",
+                "No fix will ever be released for these. Replace or upgrade the component; for a base image, move to "
+                "a release the vendor still supports.",
+            ),
+            "will_not_fix": (
+                "medium",
+                "vulnerabilities the vendor has decided not to fix",
+                "The vendor has assessed these and will not ship a fix, usually because the risk is low in typical "
+                "use. Updating will not remove them. Record a risk decision (for example a VEX statement or POA&M "
+                "entry, citing the vendor's assessment) or replace the component.",
+            ),
+            "fix_deferred": (
+                "low",
+                "vulnerabilities whose fix the vendor has deferred",
+                "The vendor plans to fix these in a later release. Track them and pick up the fix when it ships.",
+            ),
+        }
+        for status, (sev, what, detail) in vendor_findings.items():
+            for okey in sorted({v["origin"] for v in vulns if v["fix_status"] == status}):
+                hits = sorted(
+                    (v for v in vulns if v["origin"] == okey and v["fix_status"] == status),
+                    key=lambda v: (sev_rank.get(v["severity"], 9), v["id"]),
+                )
+                out.append(
+                    {
+                        "severity": sev,
+                        "origin": okey,
+                        "origin_label": label(okey),
+                        "title": f"{len(hits):,} {what}",
+                        "detail": detail,
+                        "items": [f"{v['id']}  {v['severity'].title()}  {v['package']} {v['version']}" for v in hits[:200]],
                     }
                 )
     for n in notes:
@@ -390,13 +449,13 @@ def _takeaways(m: dict) -> list[dict]:
                             "image would not resolve them; the application team owns these fixes"
                             + (
                                 f" ({fa} already {'has' if fa == 1 else 'have'} a fix available)."
-                                if (fa := sum(1 for v in serious if v["origin"] in akeys and v["fixed_version"]))
+                                if (fa := sum(1 for v in serious if v["origin"] in akeys and v["fix_status"] == "fixed"))
                                 else "."
                             ),
                         }
                     )
                 elif sb > sa:
-                    bf = sum(1 for v in serious if v["origin"] in bkeys and v["fixed_version"])
+                    bf = sum(1 for v in serious if v["origin"] in bkeys and v["fix_status"] == "fixed")
                     if bf:
                         tail = (
                             f"{bf} of them already {'has' if bf == 1 else 'have'} a fix available: "
@@ -404,9 +463,10 @@ def _takeaways(m: dict) -> list[dict]:
                             "release, or applying OS updates during the build, should resolve those."
                         )
                     else:
+                        why = _no_fix_reasons(v for v in serious if v["origin"] in bkeys)
                         tail = (
-                            "None of them has a fix released by the upstream software vendor yet, so no "
-                            "rebuild can remove them today. They need to be tracked until the vendor ships fixes."
+                            f"None of them has a fix available ({why}), so no rebuild can remove them today. "
+                            "They need a documented risk decision or tracking until the vendor ships fixes."
                         )
                     out.append(
                         {
@@ -424,7 +484,24 @@ def _takeaways(m: dict) -> list[dict]:
                             f"{sa} from the application build). Both teams have fixes to make.",
                         }
                     )
-    elif vulns is None:
+    if vulns:
+        never = Counter(v["fix_status"] for v in vulns if v["fix_status"] in ("will_not_fix", "end_of_life"))
+        if never:
+            parts = []
+            if never["will_not_fix"]:
+                parts.append(f"the vendor will not fix {never['will_not_fix']:,}")
+            if never["end_of_life"]:
+                parts.append(f"{never['end_of_life']:,} are in software the vendor no longer supports")
+            n_never = sum(never.values())
+            out.append(
+                {
+                    "tone": "warn",
+                    "text": f"{_plural(n_never, 'vulnerability', 'vulnerabilities')} will never be removed by "
+                    f"updating: {' and '.join(parts)}. Each needs a documented risk decision (for example a VEX "
+                    "statement or POA&M entry) or a different component.",
+                }
+            )
+    if vulns is None:
         out.append(
             {
                 "tone": "neutral",
