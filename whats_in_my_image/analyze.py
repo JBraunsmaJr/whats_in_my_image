@@ -79,7 +79,8 @@ def compute_origins(
 ) -> tuple[list[Origin], list[str], list[str]]:
     """Return (origins, origin key per layer, notes).
 
-    ``bases`` entries: {"ref", "label", "diff_ids"}. Attribution is by exact layer-digest match:
+    ``bases`` entries: {"ref", "label", "diff_ids"}, optionally "source" ("catalog") and "also"
+    (other tags with identical layers). Attribution is by exact layer-digest match:
     if the first N layers of the image are byte-for-byte identical to the N layers of a base
     image, those layers came from that base. This is cryptographic evidence, not a guess.
     """
@@ -122,8 +123,14 @@ def compute_origins(
             "partial layer-digest match" if b.get("partial") else "exact layer-digest match",
             list(range(start, end)),
         )
+        notes_o = []
         if b.get("partial"):
-            o.note = "Built on a different version of this base; only shared layers are attributed to it."
+            notes_o.append("Built on a different version of this base; only shared layers are attributed to it.")
+        if b.get("source") == "catalog":
+            notes_o.append("Identified automatically from the base image catalog.")
+        if b.get("also"):
+            notes_o.append("Identical to: " + ", ".join(b["also"][:5]) + ("..." if len(b["also"]) > 5 else ""))
+        o.note = " ".join(notes_o)
         origins.append(o)
         for li in o.layers:
             per_layer[li] = o.key
@@ -154,15 +161,30 @@ def compute_origins(
             span = "layer 1 looks" if est == 1 else f"layers 1-{est} look"
             notes.append(
                 f"No matching base image was available, so the base/application boundary was estimated "
-                f"from build timestamps ({span} like the base). Use --base for proof by layer digest."
+                f"from build timestamps ({span} like the base). Add the base to the catalog (`wimi catalog add`) "
+                "or use --base for proof by layer digest."
             )
         else:
             notes.append(
                 "No matching base image was available and the boundary could not be estimated. "
-                "Re-run with --base <the Iron Bank image you build FROM> for an exact attribution."
+                "Add the base to the catalog (`wimi catalog add`) or re-run with --base <the image you build FROM> "
+                "for an exact attribution."
             )
             origins.append(Origin("unknown", "Unattributed layers", "unknown", "", "none", list(range(n))))
             return origins, ["unknown"] * n, notes
+    if matched and start < n:
+        # The proven base may not be the whole story: a long pause in build times inside the remaining
+        # layers usually means another base image sits in between (e.g. Iron Bank Python on top of UBI).
+        gap_at = _estimate_boundary(history[start:])
+        if gap_at:
+            first, last = start + 1, start + gap_at
+            span = f"Layer {first} was" if first == last else f"Layers {first}-{last} were"
+            notes.append(
+                f"Possible unidentified base image: {span} built long before the layers after them, which "
+                "usually means they come from another base image rather than this build. They are counted as "
+                "part of the application build until that base is identified: add it with "
+                "`wimi catalog add` or --base."
+            )
     if start < n:
         origins.append(Origin("app", app_name, "app", "", "layers added on top of the base", list(range(start, n))))
     return origins, per_layer, notes

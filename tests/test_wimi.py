@@ -10,6 +10,7 @@ import gzip
 import hashlib
 import io
 import json
+import os
 import struct
 import tarfile
 import tempfile
@@ -17,6 +18,8 @@ import unittest
 from pathlib import Path
 
 from whats_in_my_image import cli
+from whats_in_my_image.analyze import compute_origins
+from whats_in_my_image.catalog import Catalog, pick_tags
 from whats_in_my_image.describe import describe
 from whats_in_my_image.parsers import gobuild, rpm
 from whats_in_my_image.suppliers import compare_versions
@@ -148,6 +151,8 @@ def build_fixture(tmp: Path) -> tuple[Path, Path]:
         }
     )
     base_dir = write_oci(tmp / "base", [base_layer], ["/bin/sh -c #(nop) ADD file:abc in / "])
+    # A second-level base built on the first one, like Iron Bank Python on top of UBI.
+    write_oci(tmp / "middle", [base_layer, os_layer], ["/bin/sh -c #(nop) ADD file:abc in / ", "RUN apt-get install"])
     target = write_oci(
         tmp / "app",
         [base_layer, os_layer, app_layer],
@@ -165,9 +170,68 @@ class EndToEnd(unittest.TestCase):
         self._tmp = tempfile.TemporaryDirectory()
         self.tmp = Path(self._tmp.name)
         self.target, self.base = build_fixture(self.tmp)
+        self.middle = self.tmp / "middle"
+        self.catalog = self.tmp / "catalog.json"
+        self._env = os.environ.get("WIMI_CATALOG")
+        os.environ["WIMI_CATALOG"] = str(self.catalog)  # never read the developer's real catalog
+        self._scans = 0
 
     def tearDown(self):
+        if self._env is None:
+            os.environ.pop("WIMI_CATALOG", None)
+        else:
+            os.environ["WIMI_CATALOG"] = self._env
         self._tmp.cleanup()
+
+    def catalog_add(self, *specs: str) -> None:
+        with contextlib.redirect_stdout(io.StringIO()), contextlib.redirect_stderr(io.StringIO()):
+            rc = cli.main(["catalog", "add", *specs, "--cache-dir", str(self.tmp / "cache")])
+        self.assertEqual(rc, 0)
+
+    def scan(self, *extra) -> dict:
+        """Scan the target with no --base unless one is given in ``extra``."""
+        self._scans += 1
+        out = self.tmp / f"scan{self._scans}"
+        with contextlib.redirect_stdout(io.StringIO()), contextlib.redirect_stderr(io.StringIO()):
+            rc = cli.main([f"oci:{self.target}", "-o", str(out), "-q", "--cache-dir", str(self.tmp / "cache"), *extra])
+        self.assertEqual(rc, 0)
+        return json.loads(next(out.glob("*.json")).read_text())
+
+    def test_catalog_identifies_full_base_chain_without_base_flag(self):
+        self.catalog_add(f"Debian base=oci:{self.base}", f"Python base=oci:{self.middle}")
+        m = self.scan()
+        self.assertEqual([lyr["origin"] for lyr in m["layers"]], ["base0", "base1", "app"])
+        labels = {o["key"]: o for o in m["origins"]}
+        self.assertEqual(labels["base0"]["label"], "Debian base")
+        self.assertEqual(labels["base1"]["label"], "Python base")
+        self.assertIn("catalog", labels["base1"]["note"])
+        self.assertEqual(labels["base1"]["match"], "exact layer-digest match")
+
+    def test_catalog_completes_an_incomplete_base_flag(self):
+        # The user names only the lowest base; the catalog knows the one in between.
+        self.catalog_add(f"Python base=oci:{self.middle}")
+        m = self.scan("--base", f"Debian base=oci:{self.base}")
+        self.assertEqual([lyr["origin"] for lyr in m["layers"]], ["base0", "base1", "app"])
+        curl = next(c for c in m["components"] if c["name"] == "curl")
+        self.assertEqual(curl["origin"], "base1")  # not wrongly credited to the application build
+
+    def test_outdated_base_is_reported(self):
+        base_layer = self.scan("--no-catalog")["layers"][0]["diff_id"]
+        cat = Catalog(self.catalog)
+        cat.add("reg.example/debian:12-old", [base_layer], label="Debian 12", created="2026-01-01T00:00:00Z")
+        cat.add("reg.example/debian:12-new", ["sha256:" + "f" * 64], created="2026-05-01T00:00:00Z")
+        cat.save()
+        m = self.scan()
+        self.assertEqual(m["layers"][0]["origin"], "base0")
+        self.assertTrue(
+            any(n.startswith("Outdated base image: built on reg.example/debian:12-old") for n in m["notes"])
+        )
+        self.assertTrue(any(f["title"] == "The base image is out of date" for f in m["findings"]))
+
+    def test_no_catalog_flag_ignores_catalog(self):
+        self.catalog_add(f"oci:{self.base}")
+        m = self.scan("--no-catalog")
+        self.assertNotIn("base0", {lyr["origin"] for lyr in m["layers"]} - {"unknown"})
 
     def run_cli(self, *extra) -> dict:
         out = self.tmp / "out"
@@ -288,6 +352,45 @@ class EndToEnd(unittest.TestCase):
             )
         m = json.loads(next(out.glob("*.json")).read_text())
         self.assertTrue(any("NOT built on" in n for n in m["notes"]))
+
+
+class CatalogLogic(unittest.TestCase):
+    def test_match_returns_chain_and_nearest_other_tag(self):
+        cat = Catalog(Path("unused.json"))
+        cat.add("ubi9:9.4", ["a", "b"])
+        cat.add("ubi9:9.4-again", ["a", "b"])  # same release under another tag
+        cat.add("python:3.12-newer", ["a", "b", "c", "z"])  # shares 3 layers, then diverges
+        cat.add("ubi8:8.10", ["a", "q"])  # shares less than the full match: irrelevant
+        chain, near = cat.match(["a", "b", "c", "d"])
+        self.assertEqual([e["ref"] for e in chain], ["ubi9:9.4"])
+        self.assertEqual(chain[0]["also"], ["ubi9:9.4-again"])
+        self.assertEqual([(e["ref"], e["prefix"]) for e in near], [("python:3.12-newer", 3)])
+
+    def test_newer_releases_of_the_same_base(self):
+        cat = Catalog(Path("unused.json"))
+        cat.add("reg/ubi9:9.4-1", ["a"], created="2026-01-01T00:00:00Z")
+        cat.add("reg/ubi9:9.4-2", ["b"], created="2026-03-01T00:00:00Z")
+        cat.add("reg/ubi9:9.4", ["b"], created="2026-03-01T00:00:00Z")  # same release, second tag
+        cat.add("reg/other:1", ["c"], created="2026-06-01T00:00:00Z")
+        newer = cat.newer_releases(cat.entries[0])
+        self.assertEqual([e["diff_ids"] for e in newer], [["b"]])
+
+    def test_pick_tags_newest_first(self):
+        tags = ["9.2", "9.10", "latest", "9.4", "sha256-abc.sig"]
+        self.assertEqual(pick_tags(tags, None, 2), ["9.10", "9.4"])
+        self.assertEqual(pick_tags(tags, r"^9\.[0-9]$", 0), ["9.4", "9.2"])
+
+    def test_warns_when_application_layers_hide_another_base(self):
+        history = [
+            {"created": "2025-12-01T00:00:00Z"},
+            {"created": "2026-01-01T00:00:00Z"},  # built a month before the rest: probably another base
+            {"created": "2026-03-01T00:00:00Z"},
+            {"created": "2026-03-01T00:05:00Z"},
+        ]
+        bases = [{"ref": "ubi9", "label": "UBI 9", "diff_ids": ["a"]}]
+        _, per_layer, notes = compute_origins(["a", "b", "c", "d"], bases, history, {}, "App")
+        self.assertEqual(per_layer, ["base0", "app", "app", "app"])
+        self.assertTrue(any(n.startswith("Possible unidentified base image: Layer 2 was") for n in notes))
 
 
 class Parsers(unittest.TestCase):

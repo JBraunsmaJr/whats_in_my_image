@@ -178,6 +178,14 @@ def _content_summary(comps: list[dict], ls) -> str:
     return text[0].upper() + text[1:]
 
 
+def _is_base_warning(note: str) -> bool:
+    return (
+        "NOT built on" in note
+        or "Only the first" in note
+        or note.startswith(("Possible unidentified base", "Outdated base"))
+    )
+
+
 def _findings(comps, layers, vulns, origin_by_key, notes) -> list[dict]:
     out = []
 
@@ -252,13 +260,19 @@ def _findings(comps, layers, vulns, origin_by_key, notes) -> list[dict]:
                     }
                 )
     for n in notes:
-        if "NOT built on" in n or "Only the first" in n:
+        if _is_base_warning(n):
             out.append(
                 {
                     "severity": "medium",
                     "origin": "",
                     "origin_label": "Base image",
-                    "title": "Image does not match the base image specified",
+                    "title": (
+                        "Part of the application build may come from an unidentified base image"
+                        if n.startswith("Possible unidentified base")
+                        else "The base image is out of date"
+                        if n.startswith("Outdated base")
+                        else "Image does not match the base image specified"
+                    ),
                     "detail": n,
                     "items": [],
                 }
@@ -323,7 +337,7 @@ def _takeaways(m: dict) -> list[dict]:
     na = sum(o["components"] for o in app)
 
     for n in m["notes"]:
-        if "NOT built on" in n or "Only the first" in n:
+        if _is_base_warning(n):
             out.append({"tone": "warn", "text": n})
     if not base:
         out.append(
