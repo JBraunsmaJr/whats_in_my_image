@@ -46,7 +46,7 @@ on air-gapped or locked-down hosts. Docker is **not** required.
 [Releases](https://github.com/willj4945/whats_in_my_image/releases) page, verify it (see below), then:
 
 ```bash
-pip install whats_in_my_image-0.1.0-py3-none-any.whl     # provides the `wimi` command
+pip install whats_in_my_image-0.2.0-py3-none-any.whl     # provides the `wimi` command
 ```
 
 **As a container** from [`ghcr.io/willj4945/whats_in_my_image`](https://github.com/willj4945/whats_in_my_image/pkgs/container/whats_in_my_image)
@@ -70,8 +70,8 @@ wheel and the image, a cosign signature on the image, and a `SHA256SUMS` file. T
 filled in for that release, are in each release's notes. In general:
 
 ```bash
-gh attestation verify whats_in_my_image-0.1.0-py3-none-any.whl --repo willj4945/whats_in_my_image
-gh attestation verify oci://ghcr.io/willj4945/whats_in_my_image:0.1.0 --repo willj4945/whats_in_my_image
+gh attestation verify whats_in_my_image-0.2.0-py3-none-any.whl --repo willj4945/whats_in_my_image
+gh attestation verify oci://ghcr.io/willj4945/whats_in_my_image:0.2.0 --repo willj4945/whats_in_my_image
 sha256sum --check SHA256SUMS
 ```
 

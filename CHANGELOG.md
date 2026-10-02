@@ -5,6 +5,10 @@ All notable changes to this project are documented here. The format follows
 
 ## [Unreleased]
 
+## [0.2.0] - 2026-10-02
+
+Identifies base images automatically, explains why vulnerabilities have no fix, and adds a layer cake view.
+
 ### Added
 
 - Vendor fix status for every vulnerability, read from the scanner (Trivy `Status`, Grype `fix.state`): fix
@@ -46,3 +50,7 @@ First public release.
 - Standard library only, Python 3.9+.
 - Licensed under the Apache License 2.0.
 - Container image on GHCR, signed with cosign, with SLSA build provenance and CycloneDX SBOMs.
+
+[Unreleased]: https://github.com/willj4945/whats_in_my_image/compare/v0.2.0...HEAD
+[0.2.0]: https://github.com/willj4945/whats_in_my_image/compare/v0.1.0...v0.2.0
+[0.1.0]: https://github.com/willj4945/whats_in_my_image/releases/tag/v0.1.0
