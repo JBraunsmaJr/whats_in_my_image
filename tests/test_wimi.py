@@ -23,6 +23,7 @@ from whats_in_my_image.catalog import Catalog, pick_tags
 from whats_in_my_image.describe import describe
 from whats_in_my_image.parsers import gobuild, rpm
 from whats_in_my_image.suppliers import compare_versions
+from whats_in_my_image.vulns import fix_status, parse_grype, parse_harbor
 
 ELF = b"\x7fELF" + b"\0" * 124
 WH = None  # marker for a whiteout
@@ -296,6 +297,7 @@ class EndToEnd(unittest.TestCase):
                             "PkgName": "libc6",
                             "InstalledVersion": "2.36-9",
                             "Severity": "HIGH",
+                            "Status": "will_not_fix",
                             "Layer": {"DiffID": diff_ids[0]},
                         },
                         {
@@ -304,6 +306,7 @@ class EndToEnd(unittest.TestCase):
                             "InstalledVersion": "7.88.1-10",
                             "Severity": "CRITICAL",
                             "FixedVersion": "7.88.1-11",
+                            "Status": "fixed",
                             "Layer": {"DiffID": diff_ids[1]},
                         },
                         {
@@ -311,6 +314,7 @@ class EndToEnd(unittest.TestCase):
                             "PkgName": "requests",
                             "InstalledVersion": "2.31.0",
                             "Severity": "HIGH",
+                            "Status": "end_of_life",
                             "PkgPath": f"{SITE}/requests-2.31.0.dist-info/METADATA",
                         },
                     ],
@@ -325,8 +329,22 @@ class EndToEnd(unittest.TestCase):
         self.assertEqual(by_id["CVE-2"]["origin"], "app")
         self.assertEqual(by_id["CVE-3"]["origin"], "app")
         self.assertTrue(any("introduced after" in t["text"] for t in m["takeaways"]))
+        # vendor fix status
+        self.assertEqual(
+            [by_id[c]["fix_status"] for c in ("CVE-1", "CVE-2", "CVE-3")], ["will_not_fix", "fixed", "end_of_life"]
+        )
+        titles = {(f["origin"], f["title"]) for f in m["findings"]}
+        self.assertIn(("base0", "1 vulnerability the vendor has decided not to fix"), titles)
+        self.assertIn(("app", "1 vulnerability in software the vendor no longer supports"), titles)
+        self.assertTrue(any("will never be removed by updating" in t["text"] for t in m["takeaways"]))
+        self.assertEqual(m["origins"][0]["vulns_by_fix"], {"will_not_fix": 1})
         html = next((self.tmp / "out").glob("*.html")).read_text()
         self.assertIn("CVE-2", html)
+        self.assertIn("Vendor will not fix", html)
+        self.assertIn('data-fix="end_of_life"', html)
+        vcsv = next((self.tmp / "out").glob("*-vulnerabilities.csv")).read_text()
+        self.assertIn("vendor_fix_status", vcsv.splitlines()[0])
+        self.assertIn("No longer supported by vendor", vcsv)
         # layer cake: one slice per layer, each linked to its build step, with the base seam marked
         self.assertEqual(html.count('class="slice"'), 3)
         for n in (1, 2, 3):
@@ -391,6 +409,35 @@ class CatalogLogic(unittest.TestCase):
         _, per_layer, notes = compute_origins(["a", "b", "c", "d"], bases, history, {}, "App")
         self.assertEqual(per_layer, ["base0", "app", "app", "app"])
         self.assertTrue(any(n.startswith("Possible unidentified base image: Layer 2 was") for n in notes))
+
+
+class VendorFixStatus(unittest.TestCase):
+    def test_normalisation(self):
+        self.assertEqual(fix_status("will_not_fix", ""), "will_not_fix")  # Trivy
+        self.assertEqual(fix_status("wont-fix", ""), "will_not_fix")  # Grype
+        self.assertEqual(fix_status("not-fixed", ""), "affected")  # Grype
+        self.assertEqual(fix_status("affected", "1.2.3"), "fixed")  # a fixed version always wins
+        self.assertEqual(fix_status(None, ""), "unknown")  # e.g. Harbor: no reason given
+        self.assertEqual(fix_status("something-new", ""), "unknown")
+
+    def test_grype_and_harbor(self):
+        grype = {
+            "matches": [
+                {
+                    "vulnerability": {"id": "CVE-9", "severity": "High", "fix": {"state": "wont-fix", "versions": []}},
+                    "artifact": {"name": "zlib", "version": "1.2"},
+                },
+                {
+                    "vulnerability": {"id": "CVE-8", "severity": "Low", "fix": {"state": "fixed", "versions": ["1.3"]}},
+                    "artifact": {"name": "zlib", "version": "1.2"},
+                },
+            ]
+        }
+        self.assertEqual([v.fix_status for v in parse_grype(grype, {})], ["will_not_fix", "fixed"])
+        harbor = {
+            "vulnerabilities": [{"id": "CVE-7", "severity": "High", "package": "x", "version": "1", "fix_version": ""}]
+        }
+        self.assertEqual(parse_harbor(harbor, {})[0].fix_status, "unknown")
 
 
 class Parsers(unittest.TestCase):

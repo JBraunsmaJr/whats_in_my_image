@@ -7,6 +7,10 @@ All notable changes to this project are documented here. The format follows
 
 ### Added
 
+- Vendor fix status for every vulnerability, read from the scanner (Trivy `Status`, Grype `fix.state`): fix
+  available, no fix released yet, fix deferred, will not fix, no longer supported, under investigation. Shown as a
+  chart, a filterable column and a CSV column. New findings for "will not fix", "end of life" and "deferred", and a
+  bottom-line statement of how many vulnerabilities will never be removed by updating and need a risk decision.
 - Base image catalog (`wimi catalog add | crawl | list | remove`): record the layer digests of the base images you
   use, then any scan identifies its base automatically and exactly, with no `--base` and no Dockerfile needed. The
   whole base chain is found even if `--base` names only part of it, so an unnamed base is never counted as the
