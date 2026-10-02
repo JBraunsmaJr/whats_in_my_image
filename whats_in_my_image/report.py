@@ -285,20 +285,20 @@ def _findings(comps, layers, vulns, origin_by_key, notes) -> list[dict]:
         vendor_findings = {
             "end_of_life": (
                 "high",
-                "vulnerabilities in software the vendor no longer supports",
+                "in software the vendor no longer supports",
                 "No fix will ever be released for these. Replace or upgrade the component; for a base image, move to "
                 "a release the vendor still supports.",
             ),
             "will_not_fix": (
                 "medium",
-                "vulnerabilities the vendor has decided not to fix",
+                "the vendor has decided not to fix",
                 "The vendor has assessed these and will not ship a fix, usually because the risk is low in typical "
                 "use. Updating will not remove them. Record a risk decision (for example a VEX statement or POA&M "
                 "entry, citing the vendor's assessment) or replace the component.",
             ),
             "fix_deferred": (
                 "low",
-                "vulnerabilities whose fix the vendor has deferred",
+                "whose fix the vendor has deferred",
                 "The vendor plans to fix these in a later release. Track them and pick up the fix when it ships.",
             ),
         }
@@ -313,9 +313,11 @@ def _findings(comps, layers, vulns, origin_by_key, notes) -> list[dict]:
                         "severity": sev,
                         "origin": okey,
                         "origin_label": label(okey),
-                        "title": f"{len(hits):,} {what}",
+                        "title": f"{_plural(len(hits), 'vulnerability', 'vulnerabilities')} {what}",
                         "detail": detail,
-                        "items": [f"{v['id']}  {v['severity'].title()}  {v['package']} {v['version']}" for v in hits[:200]],
+                        "items": [
+                            f"{v['id']}  {v['severity'].title()}  {v['package']} {v['version']}" for v in hits[:200]
+                        ],
                     }
                 )
     for n in notes:
@@ -346,7 +348,8 @@ def _findings(comps, layers, vulns, origin_by_key, notes) -> list[dict]:
                 "severity": "info" if change == "upgraded" else "medium",
                 "origin": okey,
                 "origin_label": label(okey),
-                "title": f"{len(items)} OS packages {change} after they were first installed",
+                "title": f"{_plural(len(items), 'OS package')} {change} after "
+                f"{'it was' if len(items) == 1 else 'they were'} first installed",
                 "detail": "The current version came from this layer, so responsibility for it moved here.",
                 "items": [
                     f"{c['name']}: {c['previous_version']} -> {c['version']} (layer {c['layer'] + 1})"
@@ -449,7 +452,9 @@ def _takeaways(m: dict) -> list[dict]:
                             "image would not resolve them; the application team owns these fixes"
                             + (
                                 f" ({fa} already {'has' if fa == 1 else 'have'} a fix available)."
-                                if (fa := sum(1 for v in serious if v["origin"] in akeys and v["fix_status"] == "fixed"))
+                                if (
+                                    fa := sum(1 for v in serious if v["origin"] in akeys and v["fix_status"] == "fixed")
+                                )
                                 else "."
                             ),
                         }

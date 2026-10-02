@@ -6,7 +6,7 @@ import math
 from collections import Counter
 from html import escape
 
-from .vulns import SEVERITIES
+from .vulns import FIX_STATUSES, SEVERITIES
 
 ORIGIN_SLOTS = ["var(--series-1)", "var(--series-3)", "var(--series-7)", "var(--series-5)"]
 SEV_COLOR = {
@@ -15,6 +15,17 @@ SEV_COLOR = {
     "MEDIUM": "var(--st-warning)",
     "LOW": "var(--muted)",
     "UNKNOWN": "var(--gridline-strong)",
+}
+# Vendor fix status: semantic colours, always shown beside their text label.
+FIX_COLOR = {
+    "fixed": "var(--st-good)",
+    "affected": "var(--muted)",
+    "fix_deferred": "var(--st-warning)",
+    "will_not_fix": "var(--st-serious)",
+    "end_of_life": "var(--st-critical)",
+    "under_investigation": "var(--gridline-strong)",
+    "not_affected": "var(--st-good)",
+    "unknown": "var(--gridline-strong)",
 }
 FLAG_SEV = {
     "high": ("High", "var(--st-critical)", "!"),
@@ -222,24 +233,18 @@ def render(m: dict) -> str:
             f"</span>{e(o['label'])}</span>"
             for o in vorigins
         )
-        rows = []
-        vmax = max([sum(o["vulns"][s] for o in vorigins) for s in SEVERITIES] + [1])
-        for s in SEVERITIES:
-            n = sum(o["vulns"][s] for o in vorigins)
-            if not n and s == "UNKNOWN":
-                continue
-            segs = "".join(
-                f'<div class="seg" style="flex:{o["vulns"][s]} 1 0;background:{colors.get(o["key"], "var(--muted)")}" '
-                f'data-tip="{e(o["label"])}: {o["vulns"][s]:,} {s.lower()}"></div>'
-                for o in vorigins
-                if o["vulns"][s]
-            )
-            width = 100 * n / vmax
-            rows.append(
-                f'<div class="vrow"><div class="vlab"><span class="sevdot" style="background:{SEV_COLOR[s]}">'
-                f'</span>{s.title()}</div><div class="vtrack"><div class="bar" style="width:{max(width, 0.5) if n else 0}%">'
-                f'{segs}</div><span class="vnum">{n:,}</span></div></div>'
-            )
+        sev_rows = [
+            (s.title(), SEV_COLOR[s], {o["key"]: o["vulns"][s] for o in vorigins})
+            for s in SEVERITIES
+            if s != "UNKNOWN" or any(o["vulns"][s] for o in vorigins)
+        ]
+        fix_rows = [
+            (lbl, FIX_COLOR[k], {o["key"]: o["vulns_by_fix"].get(k, 0) for o in vorigins})
+            for k, lbl in FIX_STATUSES.items()
+            if any(o["vulns_by_fix"].get(k, 0) for o in vorigins)
+        ]
+        rows = _origin_bars(sev_rows, vorigins, colors, label_width="90px")
+        fix_bars = _origin_bars(fix_rows, vorigins, colors, label_width="200px")
         vtable_rows = "".join(
             f'<tr><th scope="row"><span class="sw" style="background:{colors.get(o["key"], "var(--muted)")}"></span>'
             f"{e(o['label'])}</th>"
@@ -253,10 +258,13 @@ def render(m: dict) -> str:
   <p class="sub">Source: {e(m["vuln_tool"] or "imported report")}. Each vulnerability is attributed to the layer that
   installed the affected version of the component.</p>
   <div class="legend">{vlegend}</div>
-  <div class="vchart">{"".join(rows) if vulns else "<p>No known vulnerabilities reported.</p>"}</div>
+  <div class="vchart">{rows if vulns else "<p>No known vulnerabilities reported.</p>"}</div>
+  {f'<h3 class="mt">What the software vendors say about fixing them</h3><div class="vchart">{fix_bars}</div>' if vulns else ""}
   <details class="tableview"><summary>Show as table</summary>
   <table class="data"><thead><tr><th>Origin</th>{"".join(f'<th class="num">{s.title()}</th>' for s in SEVERITIES)}
   <th class="num">Total</th><th class="num">Fix available</th></tr></thead><tbody>{vtable_rows}</tbody></table>
+  <table class="data mt"><thead><tr><th>Vendor fix status</th>{"".join(f'<th class="num">{e(o["label"])}</th>' for o in vorigins)}</tr></thead>
+  <tbody>{"".join(f'<tr><th scope="row">{e(lbl)}</th>' + "".join(f'<td class="num">{c[o["key"]]:,}</td>' for o in vorigins) + "</tr>" for lbl, _, c in fix_rows)}</tbody></table>
   </details>
 </div>"""
 
@@ -347,14 +355,13 @@ def render(m: dict) -> str:
         vrows = []
         for v in sorted(vulns, key=lambda v: (sev_order.get(v["severity"], 9), v["id"])):
             vrows.append(
-                f'<tr data-origin="{e(v["origin"])}" data-sev="{e(v["severity"])}">'
+                f'<tr data-origin="{e(v["origin"])}" data-sev="{e(v["severity"])}" data-fix="{e(v["fix_status"])}">'
                 f'<td class="nw"><span class="sevdot" style="background:{SEV_COLOR.get(v["severity"])}"></span>{e(v["severity"].title())}</td>'
                 f'<td class="mono nw">{e(v["id"])}</td><td>{e(v["package"])}</td><td class="mono">{e(v["version"])}</td>'
-                + (
-                    f'<td class="mono">{e(v["fixed_version"])}</td>'
-                    if v["fixed_version"]
-                    else '<td class="muted nw">no fix yet</td>'
-                )
+                + f'<td><span class="nw"><span class="sevdot" style="background:{FIX_COLOR.get(v["fix_status"])}"></span>'
+                f"{e(FIX_STATUSES.get(v['fix_status'], v['fix_status']))}</span>"
+                + (f'<div class="mono small">{e(v["fixed_version"])}</div>' if v["fixed_version"] else "")
+                + "</td>"
                 + f"<td>{_badge(olabel.get(v['origin'], v['origin']), colors.get(v['origin'], 'var(--muted)'))}"
                 f'<div class="muted small">{("layer " + str(v["layer"] + 1)) if v["layer"] is not None else ""}'
                 f" · {e(v['attribution'])}</div></td>"
@@ -366,12 +373,16 @@ def render(m: dict) -> str:
             "origin",
         )
         vfilters += _filter_chips("vt", [(s, s.title(), SEV_COLOR[s]) for s in SEVERITIES], "sev")
+        present = {v["fix_status"] for v in vulns}
+        vfilters += _filter_chips(
+            "vt", [(k, lbl, FIX_COLOR[k]) for k, lbl in FIX_STATUSES.items() if k in present], "fix"
+        )
         vuln_section = f"""
 <section id="vulns"><h2><span class="num-h">5</span>Vulnerabilities and who introduced them</h2>
 <p class="lead">Every known vulnerability, traced to the build step that installed the affected component.</p>
 <div class="controls" data-table="vt">{vfilters}<input type="search" placeholder="Search CVE or package..." data-search="vt"></div>
 <div class="tablewrap"><table class="data" id="vt"><thead><tr><th>Severity</th><th>ID</th><th>Package</th><th>Installed</th>
-<th>Fixed in</th><th>Introduced by</th><th>Summary</th></tr></thead><tbody>{"".join(vrows)}</tbody></table></div>
+<th>Vendor fix status</th><th>Introduced by</th><th>Summary</th></tr></thead><tbody>{"".join(vrows)}</tbody></table></div>
 <p class="muted small" data-count="vt"></p></section>"""
 
     # ---------------------------------------------------------------- inventory
@@ -520,6 +531,27 @@ from (dnf history), and registry URLs.</li>
 </body></html>"""
 
 
+def _origin_bars(rows: list[tuple[str, str, dict]], vorigins: list[dict], colors: dict, label_width: str) -> str:
+    """Horizontal bars, one per category, each split into segments by origin. rows: (label, dot colour, counts)."""
+    vmax = max([sum(c.values()) for _, _, c in rows] + [1])
+    out = []
+    for label, dot, counts in rows:
+        n = sum(counts.values())
+        segs = "".join(
+            f'<div class="seg" style="flex:{counts[o["key"]]} 1 0;background:{colors.get(o["key"], "var(--muted)")}" '
+            f'data-tip="{e(o["label"])}: {counts[o["key"]]:,} ({e(label.lower())})"></div>'
+            for o in vorigins
+            if counts.get(o["key"])
+        )
+        width = max(100 * n / vmax, 0.5) if n else 0
+        out.append(
+            f'<div class="vrow" style="grid-template-columns:{label_width} 1fr"><div class="vlab">'
+            f'<span class="sevdot" style="background:{dot}"></span>{e(label)}</div><div class="vtrack">'
+            f'<div class="bar" style="width:{width}%">{segs}</div><span class="vnum">{n:,}</span></div></div>'
+        )
+    return "".join(out)
+
+
 def _filter_chips(table: str, items: list[tuple[str, str, str]], attr: str) -> str:
     chips = "".join(
         f'<button type="button" class="chip" data-attr="{attr}" data-val="{e(k)}" aria-pressed="false">'
@@ -646,7 +678,7 @@ td.num,th.num{text-align:right;font-variant-numeric:tabular-nums}
 footer{padding:24px 16px 40px}
 #tip{position:fixed;pointer-events:none;background:var(--ink);color:var(--page);font-size:.8rem;padding:4px 8px;border-radius:6px;opacity:0;transition:opacity .1s;z-index:10;max-width:280px}
 [hidden]{display:none!important}
-@media (max-width:640px){.tier{grid-template-columns:minmax(0,1fr);gap:6px}.stand{margin-inline:0}.kv{grid-template-columns:1fr}.vrow{grid-template-columns:70px 1fr}}
+@media (max-width:640px){.tier{grid-template-columns:minmax(0,1fr);gap:6px}.stand{margin-inline:0}.kv{grid-template-columns:1fr}.vrow{grid-template-columns:1fr!important;gap:4px}}
 @media print{body{background:#fff;font-size:11px}.hero{background:#fff;color:#000;--hero-ink:#000}.toc,.controls,#tip{display:none}
 details{display:block}details>*{display:block}section{break-inside:auto}.finding,.step,.tk,.card{break-inside:avoid}
 .tablewrap{overflow:visible}table.data thead th{position:static}}
