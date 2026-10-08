@@ -29,6 +29,10 @@ RUN set -eu; \
     python3 -m pip wheel --no-cache-dir --no-deps --wheel-dir /tmp/wheels .; \
     ls -l /tmp/wheels
 
+# ---- placeholder for the `dist` build context. `--build-context dist=dist/` replaces this empty stage; without it,
+# WHEEL=dist finds no wheel and says how to pass one, instead of trying to pull an image called "dist".
+FROM scratch AS dist
+
 # ---- prebuilt wheel from the `dist` build context (release workflow). Only built when WHEEL=dist.
 FROM ${BASE_IMAGE} AS wheel-dist
 USER 1001
@@ -39,7 +43,9 @@ RUN set -eu; \
     version="$(python3 -c 'import tomllib; print(tomllib.load(open("pyproject.toml", "rb"))["project"]["version"])')"; \
     set -- /tmp/dist/whats_in_my_image-"${version}"-*.whl; \
     if [ "$#" -ne 1 ] || [ ! -f "$1" ]; then \
-        echo "WHEEL=dist: expected exactly one wheel for version ${version} in the dist build context" >&2; exit 1; \
+        echo "WHEEL=dist: expected exactly one wheel for version ${version} in the dist build context;" \
+             "pass it with: docker build --build-arg WHEEL=dist --build-context dist=dist/ ." >&2; \
+        exit 1; \
     fi; \
     mkdir -p /tmp/wheels; \
     cp "$1" /tmp/wheels/; \

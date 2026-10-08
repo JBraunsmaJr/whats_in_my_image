@@ -18,6 +18,9 @@ from collections.abc import Iterable
 from pathlib import Path
 
 DEFAULT_SOCKETS = ("/var/run/docker.sock", "/run/podman/podman.sock")
+# Python on Windows has no Unix sockets, and Docker Desktop there serves its API on a named pipe; sidecars are then
+# unavailable (run wimi in its Linux container instead, which reaches the engine through the mounted socket).
+HAS_UNIX_SOCKETS = hasattr(socket, "AF_UNIX")
 
 
 class EngineError(Exception):
@@ -26,6 +29,8 @@ class EngineError(Exception):
 
 def find_socket() -> tuple[str | None, str]:
     """Locate the container engine's API socket. Returns (path or None, how it was found / why not)."""
+    if not HAS_UNIX_SOCKETS:
+        return None, "this platform has no Unix sockets for the container engine API (run wimi in its container)"
     for var in ("DOCKER_HOST", "CONTAINER_HOST"):
         val = os.environ.get(var, "")
         if not val:

@@ -50,7 +50,13 @@ def _tar(name: str, data: bytes) -> bytes:
     return buf.getvalue()
 
 
-class FakeEngine(socketserver.ThreadingMixIn, socketserver.UnixStreamServer):
+# The fake engine listens on a Unix socket, which Python on Windows does not have. The tests that need it are skipped
+# there (as are sidecars themselves: see engine.HAS_UNIX_SOCKETS); everything else still runs.
+HAS_UNIX_SOCKETS = eng.HAS_UNIX_SOCKETS and hasattr(socketserver, "UnixStreamServer")
+_SocketServer = socketserver.UnixStreamServer if HAS_UNIX_SOCKETS else socketserver.TCPServer
+
+
+class FakeEngine(socketserver.ThreadingMixIn, _SocketServer):
     daemon_threads = True
 
     def __init__(self, path: str):
@@ -159,6 +165,7 @@ class Handler(BaseHTTPRequestHandler):
         self._route("DELETE")
 
 
+@unittest.skipUnless(HAS_UNIX_SOCKETS, "needs Unix sockets (not available on Windows)")
 class SidecarTestCase(unittest.TestCase):
     def setUp(self):
         self.tmp = tempfile.TemporaryDirectory()
@@ -412,6 +419,15 @@ class Helpers(unittest.TestCase):
                 self.assertEqual(len(data), length)
                 with tarfile.open(fileobj=io.BytesIO(data)) as tf:
                     self.assertEqual(len(tf.extractfile("wimi-scan/image.tar").read()), size)
+
+    def test_no_unix_sockets_means_no_sidecars_with_a_clear_reason(self):
+        with (
+            mock.patch.object(eng, "HAS_UNIX_SOCKETS", False),
+            mock.patch.dict(os.environ, {"DOCKER_HOST": "unix:///var/run/docker.sock"}),
+        ):
+            path, why = eng.find_socket()
+        self.assertIsNone(path)
+        self.assertIn("no Unix sockets", why)
 
     def test_parse_size(self):
         cases = {
