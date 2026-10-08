@@ -76,7 +76,7 @@ jobs:
           /tmp/wheel-check/bin/wimi --version
       - name: Container image builds from the built wheel (as the release does) and runs
         run: |
-          docker build -t wimi:ci .
+          docker build --build-arg WHEEL=dist --build-context dist=dist/ -t wimi:ci .
           docker run --rm wimi:ci --version
       - name: Container image builds from source (the default) and runs
         run: |

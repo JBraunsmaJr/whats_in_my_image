@@ -13,6 +13,7 @@ import socketserver
 import tarfile
 import tempfile
 import threading
+import time
 import unittest
 import urllib.parse
 from http.server import BaseHTTPRequestHandler
@@ -229,6 +230,7 @@ class SidecarRuns(SidecarTestCase):
         self.assertNotIn("WIMI_PASSWORD", env)
         self.assertNotIn("DOCKER_HOST", env)
         host = spec["HostConfig"]
+        self.assertNotIn("NetworkMode", host)  # the engine's default network
         self.assertEqual(host["CapDrop"], ["ALL"])
         self.assertIn("no-new-privileges", host["SecurityOpt"])
         # only the volume holding the database is shared: never the socket, never the report folder
@@ -244,11 +246,47 @@ class SidecarRuns(SidecarTestCase):
             self.assertEqual(tf.extractfile("wimi-scan/image.tar").read(), self.archive_bytes)
         self.assertEqual(self.engine.removed, [cid])
 
-    def test_network_can_be_chosen(self):
+    def test_limits_accept_common_units_and_bad_values_do_not_stop_the_scan(self):
         self.engine.add_image("sha256:" + "1" * 64, ["aquasec/trivy:latest"], 1)
-        os.environ["WIMI_SCANNER_NETWORK"] = "none"
-        self.run_scan("trivy")
+        os.environ.update({"WIMI_SCANNER_MEMORY": "4GiB", "WIMI_SCANNER_TIMEOUT": "600"})
+        self.assertIsNotNone(self.run_scan("trivy"))
         (spec,) = self.engine.created.values()
+        self.assertEqual(spec["HostConfig"]["Memory"], 4 << 30)
+        expires = int(spec["Labels"]["wimi.expires"])
+        self.assertAlmostEqual(expires, time.time() + 600 + 300, delta=60)
+
+        self.engine.created.clear()
+        os.environ.update({"WIMI_SCANNER_MEMORY": "lots", "WIMI_SCANNER_TIMEOUT": "soon"})
+        self.assertIsNotNone(self.run_scan("trivy"))  # reported, defaults used, scan still runs
+        (spec,) = self.engine.created.values()
+        self.assertNotIn("Memory", spec["HostConfig"])
+        self.assertTrue(any("WIMI_SCANNER_MEMORY" in m and "without a memory limit" in m for m in self.logs))
+        self.assertTrue(any("WIMI_SCANNER_TIMEOUT='soon'" in m for m in self.logs))
+
+    def test_host_mode_shares_paths_writable(self):
+        self.engine.add_image("sha256:" + "1" * 64, ["aquasec/trivy:latest"], 1)
+        os.environ["TRIVY_CACHE_DIR"] = self.tmp.name
+        with mock.patch.object(eng, "in_container", return_value=False):
+            self.run_scan("trivy")
+        (spec,) = self.engine.created.values()
+        self.assertEqual(
+            spec["HostConfig"]["Mounts"],
+            [{"Type": "bind", "Source": self.tmp.name, "Target": self.tmp.name, "ReadOnly": False}],
+        )
+
+    def test_trivy_db_date_only_from_a_database_shared_with_the_sidecar(self):
+        self.engine.add_image("sha256:" + "1" * 64, ["aquasec/trivy:latest"], 1)
+        home, shared = Path(self.tmp.name, "home"), Path(self.tmp.name, "vulndb", "trivy")
+        for root, date in ((home / ".cache" / "trivy", "2001-01-01T00:00:00Z"), (shared, "2026-09-30T00:00:00Z")):
+            (root / "db").mkdir(parents=True)
+            (root / "db" / "metadata.json").write_text(json.dumps({"UpdatedAt": date}))
+        os.environ["HOME"] = str(home)  # an old, unrelated Trivy install in wimi's own home
+        with mock.patch.object(eng, "in_container", return_value=False):
+            res = self.run_scan("trivy")  # database lives only inside the throwaway container
+            self.assertNotIn("db_built", res.info)
+            os.environ["TRIVY_CACHE_DIR"] = str(shared)  # shared with the sidecar at the same path
+            res = self.run_scan("trivy")
+        self.assertEqual(res.info["db_built"], "2026-09-30T00:00:00Z")
 
     def test_untagged_image_name_uses_newest_local_tag(self):
         self.engine.add_image("sha256:" + "1" * 64, ["registry.local/mirror/grype:v0.119.0"], 100)
@@ -287,12 +325,24 @@ class SidecarRuns(SidecarTestCase):
         self.assertTrue(any("GRYPE_DB_AUTO_UPDATE=false" in m for m in self.logs))
         self.assertEqual(len(self.engine.removed), 1)
 
-    def test_stale_sidecars_from_killed_runs_are_removed(self):
-        self.engine.stale = [{"Id": "old1", "State": "exited"}, {"Id": "busy", "State": "running"}]
+    def test_only_expired_sidecars_are_removed(self):
+        now = int(time.time())
+        self.engine.stale = [
+            # left behind by a killed run, past the expiry it recorded
+            {"Id": "expired", "State": "exited", "Labels": {"wimi.expires": str(now - 10)}},
+            {"Id": "hung", "State": "running", "Labels": {"wimi.expires": str(now - 10)}},
+            # another wimi run's sidecar, created but not started yet, or finished and about to be read
+            {"Id": "other-created", "State": "created", "Labels": {"wimi.expires": str(now + 900)}},
+            {"Id": "other-exited", "State": "exited", "Labels": {"wimi.expires": str(now + 900)}},
+            # from a version without the label: only once it is a day old
+            {"Id": "legacy-old", "State": "exited", "Labels": {}, "Created": now - 2 * 86400},
+            {"Id": "legacy-new", "State": "exited", "Labels": {}, "Created": now - 60},
+        ]
         self.engine.add_image("sha256:" + "1" * 64, ["aquasec/trivy:latest"], 1)
         self.run_scan("trivy")
-        self.assertIn("old1", self.engine.removed)
-        self.assertNotIn("busy", self.engine.removed)
+        removed = set(self.engine.removed)
+        self.assertTrue({"expired", "hung", "legacy-old"} <= removed)
+        self.assertFalse({"other-created", "other-exited", "legacy-new"} & removed)
 
     def test_path_not_on_a_volume_is_reported(self):
         self.engine.add_image("sha256:" + "1" * 64, ["aquasec/trivy:latest"], 1)
@@ -362,6 +412,21 @@ class Helpers(unittest.TestCase):
                 self.assertEqual(len(data), length)
                 with tarfile.open(fileobj=io.BytesIO(data)) as tf:
                     self.assertEqual(len(tf.extractfile("wimi-scan/image.tar").read()), size)
+
+    def test_parse_size(self):
+        cases = {
+            "4g": 4 << 30,
+            "4gb": 4 << 30,
+            "4GiB": 4 << 30,
+            "512Mi": 512 << 20,
+            "1.5g": 3 << 29,
+            "1048576": 1 << 20,
+        }
+        for text, expected in cases.items():
+            self.assertEqual(scanners.parse_size(text), expected, text)
+        for bad in ("", "lots", "4x", "-1g"):
+            with self.assertRaises(ValueError):
+                scanners.parse_size(bad)
 
     def test_mount_override_rejects_bad_entries(self):
         for bad in ("vulndb", "vulndb:relative", "vulndb:/x:rx"):
