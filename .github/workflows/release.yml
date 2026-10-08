@@ -92,7 +92,8 @@ jobs:
 
       - name: Build container image
         run: |
-          docker build \
+          # The signed wheel goes in through its own build context, so the image contains exactly that file.
+          docker build --build-arg WHEEL=dist --build-context dist=dist/ \
             --label "org.opencontainers.image.version=${VERSION}" \
             --label "org.opencontainers.image.revision=${GITHUB_SHA}" \
             --label "org.opencontainers.image.source=${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}" \

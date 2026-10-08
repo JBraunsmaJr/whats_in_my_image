@@ -17,7 +17,7 @@ All notable changes to this project are documented here. The format follows
   holding a path they name (for example the vulnerability database in `TRIVY_CACHE_DIR`) is mounted at the same path,
   so air-gapped database settings work the same for binaries and sidecars. `WIMI_VULNDB_MOUNT` overrides detection.
 - `WIMI_SCANNER_MODE` (`auto`, `binary`, `container`, `off`), `WIMI_SCANNER_TIMEOUT`, `WIMI_SCANNER_MEMORY`,
-  `WIMI_SCANNER_USER`, `WIMI_SCANNER_NETWORK` (the engine's default network unless set; `none` isolates the scanner).
+  `WIMI_SCANNER_USER`. Sidecars run on the engine's default network.
 - The report records how the scan ran (binary or container image and digest), the scanner version, and the date its
   vulnerability data was built, and warns in the bottom line when that data is more than 30 days old.
 - CI job that runs a real Trivy sidecar against a mirrored image and a database volume.
@@ -25,7 +25,10 @@ All notable changes to this project are documented here. The format follows
 ### Changed
 
 - `docker build .` now works from a clean checkout: the Dockerfile builds the wheel from source in a first stage, so
-  no local `python -m build` is needed, and a leftover wheel in `dist/` can never end up in the image.
+  no local `python -m build` is needed, and a leftover wheel in `dist/` can never end up in the image. Build
+  arguments `PIP_INDEX_URL` (and `PIP_EXTRA_INDEX_URL`, `PIP_TRUSTED_HOST`) point the build at a PyPI mirror on
+  disconnected networks. The release workflow passes its signed wheel in with `--build-arg WHEEL=dist
+  --build-context dist=dist/`, so released images contain exactly that wheel.
 
 ## [0.2.0] - 2026-10-02
 

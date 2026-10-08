@@ -74,8 +74,13 @@ docker build -t wimi --build-arg BASE_IMAGE=registry.example.mil/ironbank/ubi9/p
 
 Building from source downloads the build backend (setuptools) from a package index, so on a disconnected network pass
 your mirror with `PIP_INDEX_URL` (`PIP_EXTRA_INDEX_URL` and `PIP_TRUSTED_HOST` are also accepted). A replacement
-`BASE_IMAGE` needs Python 3.11 or newer with pip. The image is always built from the checked-out source; anything in
-`dist/` is ignored.
+`BASE_IMAGE` needs Python 3.11 or newer with pip. The image is always built from the checked-out source; `dist/` is
+not part of the build context. The release workflow instead hands the Dockerfile the wheel it has just built and
+signed, so the published image contains exactly that file:
+
+```bash
+docker build --build-arg WHEEL=dist --build-context dist=dist/ -t wimi .   # needs BuildKit / buildx, or Podman 4+
+```
 
 ### Verifying a release
 
@@ -204,9 +209,9 @@ Commit the team's base catalog (`ci/base-catalog.json` here) so every pipeline i
 3. otherwise that scanner is **skipped**, and the log says why.
 
 The `wimi` image contains no scanners. Trivy and Grype stay separate images, so each can be approved, mirrored and
-updated on its own schedule. A scanner container ("sidecar") runs with no capabilities and `no-new-privileges`
-on the engine's default network (set `WIMI_SCANNER_NETWORK=none` to cut it off), is removed when the scan ends, and receives the image to scan through the engine API, so no
-host paths are involved.
+updated on its own schedule. A scanner container ("sidecar") runs on the engine's default network with no
+capabilities and `no-new-privileges`, is removed when the scan ends, and receives the image to scan through the engine
+API, so no host paths are involved.
 
 **Pointing at your mirrored images.** By default `wimi` looks for `aquasec/trivy` or `ghcr.io/aquasecurity/trivy`, and
 `anchore/grype` or `ghcr.io/anchore/grype`, using the newest tag present locally. If your registry renames them:
@@ -258,7 +263,7 @@ the bottom line says so: vulnerabilities published since then are not in the rep
 | `WIMI_SCANNER_ENV`                     |                | More variables to pass to sidecars, comma separated (e.g. `SSL_CERT_FILE`)         |
 | `WIMI_VULNDB_MOUNT`                    | detected       | `SOURCE:/path[:ro\|rw]`, comma separated, to mount instead of the detected volumes |
 | `WIMI_SCANNER_TIMEOUT`                 | `1800`         | Seconds before a sidecar is stopped                                                |
-| `WIMI_SCANNER_MEMORY`                  | none           | Memory limit for a sidecar, e.g. `4g`                                              |
+| `WIMI_SCANNER_MEMORY`                  | none           | Memory limit for a sidecar, e.g. `512m`, `4g`, `4GiB`                              |
 | `WIMI_SCANNER_USER`                    | image's user   | User the sidecar runs as, e.g. `1001:0`                                            |
 | `WIMI_CONTAINER_ID`                    | detected       | `wimi`'s own container ID, if it cannot be detected (used to find its volumes)     |
 

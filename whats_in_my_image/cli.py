@@ -54,8 +54,8 @@ EPILOG = textwrap.dedent("""\
                                              holding a path they name is shared at the same path
       WIMI_SCANNER_ENV                       more variable names to pass through, comma separated
       WIMI_VULNDB_MOUNT                      SOURCE:/path[:ro|rw] to share instead of the detected volumes
-      WIMI_SCANNER_TIMEOUT / _MEMORY / _USER sidecar limits (default 1800 seconds, no memory limit, image's user)
-      WIMI_SCANNER_NETWORK                   sidecar network (default: the engine's default; "none" to isolate)
+      WIMI_SCANNER_TIMEOUT / _MEMORY / _USER sidecar limits (default 1800 seconds, no memory limit, image's user);
+                                             memory as 512m, 4g, 4GiB ...
 """)
 
 

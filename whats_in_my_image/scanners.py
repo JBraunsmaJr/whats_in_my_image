@@ -8,7 +8,7 @@ For each scanner, in order:
 3. otherwise: skip it.
 
 Sidecars get the image archive copied in through the engine API (so no host paths are involved), no added
-capabilities, the engine's default network (or ``WIMI_SCANNER_NETWORK``), and only the environment variables meant
+capabilities, the engine's default network, and only the environment variables meant
 for that scanner (``TRIVY_*`` / ``GRYPE_*`` plus any named in ``WIMI_SCANNER_ENV``). If a forwarded variable points
 at a path (for example ``TRIVY_CACHE_DIR=/vulndb/trivy``), the volume wimi has mounted at that path is mounted at the
 same path in the sidecar, so the same settings work for binaries and sidecars alike.
@@ -26,6 +26,7 @@ import subprocess
 import tarfile
 import tempfile
 import threading
+import time
 from collections.abc import Callable, Iterator
 from dataclasses import dataclass, field
 from pathlib import Path
@@ -167,7 +168,7 @@ def _run_binary(tool: Tool, binary: str, archive: Path, log) -> ScanRun | None:
         log(f"  {tool.key} produced unreadable output: {e}")
         return None
     info = {"tool": tool.label, "mode": "binary", "binary": binary}
-    info.update(_describe(tool, doc))
+    info.update(_describe(tool, doc, trivy_cache=os.environ.get("TRIVY_CACHE_DIR") or _default_trivy_cache()))
     return ScanRun(tool.key, doc, info)
 
 
@@ -297,8 +298,9 @@ def sidecar_mounts(engine: eng.Engine, env: dict[str, str], log) -> list[dict]:
     if not paths:
         return []
     if not eng.in_container():
-        # wimi runs on the host next to a local engine: share the same host paths, read-only.
-        return [{"Type": "bind", "Source": p, "Target": p, "ReadOnly": True} for p in paths if Path(p).exists()]
+        # wimi runs on the host next to a local engine: share the same host paths. Writable, as they are for wimi
+        # and for an installed scanner, so a connected scanner can download or refresh its database there.
+        return [{"Type": "bind", "Source": p, "Target": p, "ReadOnly": False} for p in paths if Path(p).exists()]
     me = None
     for cid in eng.own_container_ids():
         me = engine.container_inspect(cid)
@@ -332,28 +334,64 @@ def sidecar_mounts(engine: eng.Engine, env: dict[str, str], log) -> list[dict]:
 # --------------------------------------------------------------------------- sidecar containers
 
 
-def _size(v: str | None) -> int | None:
-    if not v:
-        return None
-    v = v.strip().lower()
-    mult = {"k": 1 << 10, "m": 1 << 20, "g": 1 << 30}.get(v[-1:], 1)
-    return int(float(v.rstrip("kmgb") if mult > 1 else v) * mult)
+DEFAULT_TIMEOUT = 1800.0
+_SIZE = re.compile(r"(\d+(?:\.\d+)?)\s*([kmgt]?)(?:ib|i|b)?", re.IGNORECASE)
+_UNITS = {"": 1, "k": 1 << 10, "m": 1 << 20, "g": 1 << 30, "t": 1 << 40}
 
 
-def container_spec(tool: Tool, image: dict, env: dict[str, str], mounts: list[dict]) -> dict:
+def parse_size(v: str) -> int:
+    """Bytes from "4g", "4gb", "4GiB", "512Mi", "1.5g" or a plain number of bytes."""
+    m = _SIZE.fullmatch(v.strip())
+    if not m:
+        raise ValueError(f"not a size: {v!r} (examples: 512m, 4g, 4GiB)")
+    return int(float(m.group(1)) * _UNITS[m.group(2).lower()])
+
+
+def sidecar_limits(log) -> tuple[float, int | None]:
+    """(timeout in seconds, memory limit in bytes or None) from the environment. A bad value is reported and the
+    default used, rather than stopping the whole analysis over a typo."""
+    timeout = DEFAULT_TIMEOUT
+    raw = (os.environ.get("WIMI_SCANNER_TIMEOUT") or "").strip()
+    if raw:
+        try:
+            timeout = float(raw)
+            if timeout <= 0:
+                raise ValueError
+        except ValueError:
+            log(f"  WIMI_SCANNER_TIMEOUT={raw!r} is not a positive number of seconds; using {DEFAULT_TIMEOUT:.0f}")
+            timeout = DEFAULT_TIMEOUT
+    memory = None
+    raw = (os.environ.get("WIMI_SCANNER_MEMORY") or "").strip()
+    if raw:
+        try:
+            memory = parse_size(raw)
+        except ValueError as e:
+            log(f"  WIMI_SCANNER_MEMORY: {e}; running without a memory limit")
+    return timeout, memory
+
+
+def container_spec(
+    tool: Tool,
+    image: dict,
+    env: dict[str, str],
+    mounts: list[dict],
+    memory: int | None = None,
+    timeout: float = DEFAULT_TIMEOUT,
+) -> dict:
     host = {
         "CapDrop": ["ALL"],
         "SecurityOpt": ["no-new-privileges"],
         "Mounts": mounts,
     }
-    mem = _size(os.environ.get("WIMI_SCANNER_MEMORY"))
-    if mem:
-        host["Memory"] = mem
+    if memory:
+        host["Memory"] = memory
+    # The container is only fair game for another run's clean-up once it has outlived this run's own timeout.
+    expires = int(time.time() + timeout + 300)
     spec = {
         "Image": image["Id"],
         "Cmd": scanner_args(tool.key, f"{SCAN_DIR}/image.tar", f"{SCAN_DIR}/result.json"),
         "Env": [f"{k}={v}" for k, v in sorted(env.items())],
-        "Labels": {"wimi.scan": "1", "wimi.tool": tool.key},
+        "Labels": {"wimi.scan": "1", "wimi.tool": tool.key, "wimi.expires": str(expires)},
         "HostConfig": host,
     }
     if os.environ.get("WIMI_SCANNER_USER"):
@@ -392,9 +430,7 @@ def _read_result(tar_bytes: bytes) -> bytes:
 
 def _run_sidecar(engine: eng.Engine, tool: Tool, image: dict, archive: Path, ctx: _Context, log) -> ScanRun | None:
     ref = image["_ref"]
-    network = (os.environ.get("WIMI_SCANNER_NETWORK") or "").strip() or "engine default"
-    short_id = image["Id"][7:19]
-    log(f"Running {tool.key} vulnerability scan in a container from {ref} ({short_id}, network: {network}) ...")
+    log(f"Running {tool.key} vulnerability scan in a container from {ref} ({image['Id'][7:19]}) ...")
     env = forwarded_env(tool)
     try:
         mounts = sidecar_mounts(engine, env, log)
@@ -403,11 +439,11 @@ def _run_sidecar(engine: eng.Engine, tool: Tool, image: dict, archive: Path, ctx
         return None
     for m in mounts:
         log(f"  sharing {m['Source']} at {m['Target']}{' (read-only)' if m['ReadOnly'] else ''}")
-    timeout = float(os.environ.get("WIMI_SCANNER_TIMEOUT") or 1800)
+    timeout, memory = sidecar_limits(log)
     cid = None
     try:
         with _terminate_as_interrupt():
-            cid = engine.create(container_spec(tool, image, env, mounts))
+            cid = engine.create(container_spec(tool, image, env, mounts, memory=memory, timeout=timeout))
             stream, length = tar_stream(archive)
             engine.put_archive(cid, "/", stream, length)
             engine.start(cid)
@@ -436,7 +472,10 @@ def _run_sidecar(engine: eng.Engine, tool: Tool, image: dict, archive: Path, ctx
     digests = image.get("RepoDigests") or []
     if digests:
         info["image_digest"] = digests[0]
-    info.update(_describe(tool, doc, image))
+    # Trivy's database date is read from its cache directory, which wimi can only see if it is shared.
+    cache = env.get("TRIVY_CACHE_DIR", "")
+    shared = bool(cache) and any(_under(cache, m["Target"]) for m in mounts)
+    info.update(_describe(tool, doc, image, trivy_cache=cache if shared else None))
     return ScanRun(tool.key, doc, info)
 
 
@@ -456,11 +495,23 @@ def _hint(tool: Tool, env: dict[str, str], log) -> None:
         log("  hint: on a disconnected network set GRYPE_DB_AUTO_UPDATE=false and GRYPE_DB_CACHE_DIR=<database dir>")
 
 
+LEGACY_STALE_AFTER = 24 * 3600  # sidecars from versions that did not label an expiry time
+
+
+def is_stale(container: dict, now: float) -> bool:
+    """A sidecar left behind by a wimi run that was killed. Another run may be using a sidecar at any moment from
+    its creation until its own timeout, so only containers past the expiry recorded at creation qualify."""
+    expires = (container.get("Labels") or {}).get("wimi.expires", "")
+    if expires.isdigit():
+        return int(expires) < now
+    return now - float(container.get("Created") or now) > LEGACY_STALE_AFTER
+
+
 def _remove_stale(engine: eng.Engine) -> None:
-    """Remove sidecars left behind by an earlier wimi run that was killed."""
     try:
+        now = time.time()
         for c in engine.containers("wimi.scan"):
-            if c.get("State") != "running":
+            if is_stale(c, now):
                 engine.remove(c["Id"])
     except eng.EngineError:
         pass
@@ -488,12 +539,12 @@ class _terminate_as_interrupt:
 # --------------------------------------------------------------------------- what to say in the report
 
 
-def _describe(tool: Tool, doc: dict, image: dict | None = None) -> dict:
+def _describe(tool: Tool, doc: dict, image: dict | None = None, trivy_cache: str | None = None) -> dict:
     """Scanner version and vulnerability database date, as far as they can be determined."""
     out: dict = {}
     if tool.key == "trivy":
         out["version"] = (doc.get("Trivy") or {}).get("Version", "")
-        built = _trivy_db_updated()
+        built = _trivy_db_updated(trivy_cache) if trivy_cache else ""
         if built:
             out["db_built"] = built
     else:
@@ -510,10 +561,14 @@ def _describe(tool: Tool, doc: dict, image: dict | None = None) -> dict:
     return {k: v for k, v in out.items() if v}
 
 
-def _trivy_db_updated() -> str:
-    """Trivy does not put its database date in the report; read it from the database's metadata.json.
-    In a sidecar the database is mounted at the same path as in wimi, so the same lookup works."""
-    cache = os.environ.get("TRIVY_CACHE_DIR") or str(Path.home() / ".cache" / "trivy")
+def _default_trivy_cache() -> str:
+    return str(Path.home() / ".cache" / "trivy")
+
+
+def _trivy_db_updated(cache: str) -> str:
+    """Trivy does not put its database date in the report; read it from the database's metadata.json in `cache`.
+    For a sidecar, the caller passes the cache only when it is a volume shared with wimi at the same path, so this
+    never picks up an unrelated database from wimi's own home directory."""
     try:
         meta = json.loads((Path(cache) / "db" / "metadata.json").read_text())
     except (OSError, ValueError):
