@@ -392,7 +392,9 @@ def _read_result(tar_bytes: bytes) -> bytes:
 
 def _run_sidecar(engine: eng.Engine, tool: Tool, image: dict, archive: Path, ctx: _Context, log) -> ScanRun | None:
     ref = image["_ref"]
-    log(f"Running {tool.key} vulnerability scan in a container from {ref} ({image['Id'][7:19]}) ...")
+    network = (os.environ.get("WIMI_SCANNER_NETWORK") or "").strip() or "engine default"
+    short_id = image["Id"][7:19]
+    log(f"Running {tool.key} vulnerability scan in a container from {ref} ({short_id}, network: {network}) ...")
     env = forwarded_env(tool)
     try:
         mounts = sidecar_mounts(engine, env, log)
