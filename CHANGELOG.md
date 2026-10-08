@@ -24,10 +24,8 @@ All notable changes to this project are documented here. The format follows
 
 ### Changed
 
-- `docker build .` now works from a clean checkout: the Dockerfile builds the wheel in a first stage, so no local
-  `python -m build` is needed. A wheel for the current version already in `dist/` is still used as is, so released
-  images keep containing exactly the signed wheel. `PIP_INDEX_URL` (and `PIP_EXTRA_INDEX_URL`, `PIP_TRUSTED_HOST`)
-  build arguments point the build at a PyPI mirror on disconnected networks.
+- `docker build .` now works from a clean checkout: the Dockerfile builds the wheel from source in a first stage, so
+  no local `python -m build` is needed, and a leftover wheel in `dist/` can never end up in the image.
 
 ## [0.2.0] - 2026-10-02
 

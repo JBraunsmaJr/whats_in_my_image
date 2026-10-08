@@ -4,6 +4,6 @@
 !LICENSE
 !NOTICE
 !whats_in_my_image/
-!dist/*.whl
+dist/
 **/__pycache__
 **/*.pyc

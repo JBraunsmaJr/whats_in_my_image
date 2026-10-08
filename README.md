@@ -74,9 +74,8 @@ docker build -t wimi --build-arg BASE_IMAGE=registry.example.mil/ironbank/ubi9/p
 
 Building from source downloads the build backend (setuptools) from a package index, so on a disconnected network pass
 your mirror with `PIP_INDEX_URL` (`PIP_EXTRA_INDEX_URL` and `PIP_TRUSTED_HOST` are also accepted). A replacement
-`BASE_IMAGE` needs Python 3.11 or newer with pip. If `dist/` already holds the wheel for the current version, that
-wheel is used instead of building one (this is how releases ship the exact wheel that was signed); wheels for other
-versions are ignored.
+`BASE_IMAGE` needs Python 3.11 or newer with pip. The image is always built from the checked-out source; anything in
+`dist/` is ignored.
 
 ### Verifying a release
 

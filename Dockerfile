@@ -1,6 +1,9 @@
-# Container image for wimi. `docker build -t wimi .` from a clean checkout is all it takes: the first stage
-# builds the wheel from source. If dist/ already holds the wheel for this version (the release workflow builds it
-# first), that wheel is used instead, so a released image contains exactly the artifact that was signed and attested.
+# Container image for wimi. `docker build -t wimi .` is all it takes: the first stage builds the wheel from the
+# source in the build context, so the image always matches the checkout.
+#
+# The release workflow builds and signs the wheel first and passes --build-arg WHEEL=dist, so the published image
+# contains exactly that artifact. Anything already in dist/ is ignored otherwise: an old local build can share the
+# version number with newer code.
 #
 # Base: Red Hat UBI 9 + Python 3.12 (minimal), pinned by digest so builds are reproducible.
 # Dependabot does not update this pin; refresh it deliberately when cutting a release.
@@ -19,15 +22,8 @@ USER 1001
 WORKDIR /tmp/src
 COPY --chown=1001:0 . .
 RUN set -eu; \
-    version="$(python3 -c 'import tomllib; print(tomllib.load(open("pyproject.toml", "rb"))["project"]["version"])')"; \
     mkdir -p /tmp/wheels; \
-    if ls "dist/whats_in_my_image-${version}-"*.whl >/dev/null 2>&1; then \
-        echo "Using prebuilt wheel for ${version} from dist/"; \
-        cp "dist/whats_in_my_image-${version}-"*.whl /tmp/wheels/; \
-    else \
-        echo "Building wheel ${version} from source"; \
-        python3 -m pip wheel --no-cache-dir --no-deps --wheel-dir /tmp/wheels .; \
-    fi; \
+    python3 -m pip wheel --no-cache-dir --no-deps --wheel-dir /tmp/wheels . ;\
     ls -l /tmp/wheels
 
 # ---- runtime image: the base plus the wheel, nothing else
