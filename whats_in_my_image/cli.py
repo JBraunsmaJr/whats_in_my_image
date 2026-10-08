@@ -41,6 +41,21 @@ EPILOG = textwrap.dedent("""\
       run `wimi catalog --help` for more.
 
     credentials are read from `docker login` / `podman login`, or WIMI_USERNAME / WIMI_PASSWORD.
+
+    scanners (--scan):
+      An installed trivy / grype binary is used first. Otherwise, if a container engine socket is reachable
+      (/var/run/docker.sock, a Podman socket, or DOCKER_HOST=unix://...) and the scanner image is present locally,
+      the scanner runs as a sidecar container. Otherwise that scanner is skipped.
+      WIMI_TRIVY_IMAGE / WIMI_GRYPE_IMAGE    scanner image(s), comma separated, e.g. registry.local/mirror/trivy:0.75.0
+                                             (default aquasec/trivy and anchore/grype, newest local tag)
+      WIMI_SCANNER_MODE                      auto (default) | binary | container | off
+      WIMI_SCANNER_PULL                      true to pull a missing scanner image (default: never pull)
+      TRIVY_* / GRYPE_*                      passed to the sidecar, e.g. TRIVY_CACHE_DIR, GRYPE_DB_CACHE_DIR; the volume
+                                             holding a path they name is shared at the same path
+      WIMI_SCANNER_ENV                       more variable names to pass through, comma separated
+      WIMI_VULNDB_MOUNT                      SOURCE:/path[:ro|rw] to share instead of the detected volumes
+      WIMI_SCANNER_TIMEOUT / _MEMORY / _USER sidecar limits (default 1800 seconds, no memory limit, image's user)
+      WIMI_SCANNER_NETWORK                   sidecar network (default: the engine's default; "none" to isolate)
 """)
 
 
@@ -81,7 +96,8 @@ def _parser() -> argparse.ArgumentParser:
         nargs="?",
         const="auto",
         choices=["auto", "trivy", "grype"],
-        help="run Trivy or Grype (if installed) and attribute every finding",
+        help="run Trivy or Grype and attribute every finding: the installed binary if there is one, otherwise the "
+        "scanner's container image if a container engine is reachable (see 'scanners' below)",
     )
     g.add_argument(
         "--vuln-report",
@@ -252,17 +268,20 @@ def main(argv: list[str] | None = None) -> int:
         hv = vulnmod.fetch_harbor(image, log)
         if hv is not None:
             found_vulns, tool = (found_vulns or []) + hv, tool or "Harbor scan"
+    scan_info = None
     if args.scan:
         res = vulnmod.run_scanner(args.scan, image, log)
         if res:
-            tool, sv = res
+            _, sv, scan_info = res
             found_vulns = (found_vulns or []) + sv
-            tool = tool.capitalize()
+            tool = " ".join(filter(None, (scan_info.get("tool"), scan_info.get("version"))))
     if found_vulns is not None:
         found_vulns = _dedupe(found_vulns)
         vulnmod.attribute(found_vulns, [vars(c) for c in analyzer.components], per_layer)
 
-    model = report.build(image, walker, analyzer, origins, per_layer, notes, found_vulns, tool, args.app_name)
+    model = report.build(
+        image, walker, analyzer, origins, per_layer, notes, found_vulns, tool, args.app_name, vuln_scan=scan_info
+    )
     model["subtitle"] = args.subtitle
 
     # ---- write outputs

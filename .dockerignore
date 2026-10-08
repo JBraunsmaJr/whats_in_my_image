@@ -1,4 +1,9 @@
 *
-!dist/*.whl
+!pyproject.toml
+!README.md
 !LICENSE
 !NOTICE
+!whats_in_my_image/
+!dist/*.whl
+**/__pycache__
+**/*.pyc
