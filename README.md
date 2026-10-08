@@ -24,15 +24,15 @@ Illustrative terminal summary (the HTML report has the full detail):
 
 ## Why the answer can be trusted
 
-| Question | How `wimi` answers it | Strength of evidence |
-| --- | --- | --- |
+| Question                               | How `wimi` answers it                                                                                                                                              | Strength of evidence                                         |
+|----------------------------------------|--------------------------------------------------------------------------------------------------------------------------------------------------------------------|--------------------------------------------------------------|
 | Which layers came from the base image? | Layer SHA-256 digests compared with known base images, found automatically from a [base image catalog](#identifying-the-base-automatically) or given with `--base` | **Cryptographic proof** (identical digest = identical bytes) |
-| Who installed each OS package? | The RPM/dpkg/apk database is read at *every* layer, so each package is credited to the layer that installed its current version | Exact |
-| Who built and signed each RPM? | Signing key ID from the package's OpenPGP signature, Vendor field, build host | Exact (e.g. `199E2F91FD431D51` = Red Hat release key 2) |
-| Which repository did it come from? | dnf/microdnf history database (`ubi-9-baseos-rpms`, `epel`, `@commandline` ...) | Exact, when the history file is present |
-| What about pip/npm/Maven/Go libraries? | Their own metadata (`dist-info`, `package.json`, `pom.properties`, Go build info) | Exact |
-| What about loose binaries? | Every executable is checked against all package file lists; anything unowned is flagged with its SHA-256 and the build step that added it | Exact as far as the build step |
-| Who introduced each CVE? | Each finding from your scanner (Trivy, Grype, or Harbor's built-in scan) is matched to the traced component | Exact when matched (shown per finding) |
+| Who installed each OS package?         | The RPM/dpkg/apk database is read at *every* layer, so each package is credited to the layer that installed its current version                                    | Exact                                                        |
+| Who built and signed each RPM?         | Signing key ID from the package's OpenPGP signature, Vendor field, build host                                                                                      | Exact (e.g. `199E2F91FD431D51` = Red Hat release key 2)      |
+| Which repository did it come from?     | dnf/microdnf history database (`ubi-9-baseos-rpms`, `epel`, `@commandline` ...)                                                                                    | Exact, when the history file is present                      |
+| What about pip/npm/Maven/Go libraries? | Their own metadata (`dist-info`, `package.json`, `pom.properties`, Go build info)                                                                                  | Exact                                                        |
+| What about loose binaries?             | Every executable is checked against all package file lists; anything unowned is flagged with its SHA-256 and the build step that added it                          | Exact as far as the build step                               |
+| Who introduced each CVE?               | Each finding from your scanner (Trivy, Grype, or Harbor's built-in scan) is matched to the traced component                                                        | Exact when matched (shown per finding)                       |
 
 If the application build upgrades a base package (for example `dnf update openssl`), that version is credited to the
 **application build**, because that is the layer that put it there.
@@ -63,6 +63,21 @@ The report lands in `./reports`. Pass registry credentials with `-e WIMI_USERNAM
 
 **From source:** `pip install .` or run without installing: `python3 -m whats_in_my_image --help`.
 
+**Build the container image yourself** from a checkout. No local Python build step is needed; the Dockerfile builds the
+wheel in a first stage and the final image holds only the base and the installed wheel:
+
+```bash
+docker build -t wimi .                                    # or: podman build -t wimi .
+docker build -t wimi --build-arg PIP_INDEX_URL=https://nexus.example.mil/repository/pypi/simple .   # PyPI mirror
+docker build -t wimi --build-arg BASE_IMAGE=registry.example.mil/ironbank/ubi9/python312:latest .  # another base
+```
+
+Building from source downloads the build backend (setuptools) from a package index, so on a disconnected network pass
+your mirror with `PIP_INDEX_URL` (`PIP_EXTRA_INDEX_URL` and `PIP_TRUSTED_HOST` are also accepted). A replacement
+`BASE_IMAGE` needs Python 3.11 or newer with pip. If `dist/` already holds the wheel for the current version, that
+wheel is used instead of building one (this is how releases ship the exact wheel that was signed); wheels for other
+versions are ignored.
+
 ### Verifying a release
 
 Every release is built by GitHub Actions and ships with signed build provenance (SLSA), CycloneDX SBOMs for the
@@ -90,7 +105,7 @@ wimi registry.example.mil/team/api:2.4 \
      --app-name "Payments team build"
 
 # Add vulnerability attribution (pick one)
-wimi IMAGE --scan                         # runs Trivy or Grype if installed
+wimi IMAGE --scan                         # runs Trivy or Grype: installed binary, or its container image
 wimi IMAGE --vuln-report trivy.json       # imports a Trivy or Grype JSON report from your pipeline
 wimi IMAGE --harbor-vulns                 # optional: reuses the scan a Harbor registry already ran
 
@@ -142,12 +157,12 @@ marks it as an estimate.
 
 All files go to `./wimi-reports/` (change with `-o`):
 
-| File | For |
-| --- | --- |
-| `provenance-<image>.html` | **Executive report.** One self-contained file to email, attach to a ticket, or print to PDF. |
-| `provenance-<image>.json` | Full data for automation / dashboards |
-| `provenance-<image>-components.csv` | Inventory for spreadsheets: supplier, layer, evidence and concerns for every component |
-| `provenance-<image>-vulnerabilities.csv` | Every CVE with the party that introduced it |
+| File                                     | For                                                                                          |
+|------------------------------------------|----------------------------------------------------------------------------------------------|
+| `provenance-<image>.html`                | **Executive report.** One self-contained file to email, attach to a ticket, or print to PDF. |
+| `provenance-<image>.json`                | Full data for automation / dashboards                                                        |
+| `provenance-<image>-components.csv`      | Inventory for spreadsheets: supplier, layer, evidence and concerns for every component       |
+| `provenance-<image>-vulnerabilities.csv` | Every CVE with the party that introduced it                                                  |
 
 The HTML report has these sections:
 
@@ -180,13 +195,86 @@ provenance:
 
 Commit the team's base catalog (`ci/base-catalog.json` here) so every pipeline identifies bases the same way.
 
+## Scanning in an air-gapped network
+
+`--scan` runs Trivy or Grype against the exact layers `wimi` traced. For each scanner it uses, in order:
+
+1. the **installed binary**, if `trivy` / `grype` is on `PATH`;
+2. otherwise the **scanner's container image**, if a container engine socket is reachable (`/var/run/docker.sock`,
+   a Podman socket, or `DOCKER_HOST=unix://...`) and the image is already present locally;
+3. otherwise that scanner is **skipped**, and the log says why.
+
+The `wimi` image contains no scanners. Trivy and Grype stay separate images, so each can be approved, mirrored and
+updated on its own schedule. A scanner container ("sidecar") runs with no capabilities and `no-new-privileges`
+on the engine's default network (set `WIMI_SCANNER_NETWORK=none` to cut it off), is removed when the scan ends, and receives the image to scan through the engine API, so no
+host paths are involved.
+
+**Pointing at your mirrored images.** By default `wimi` looks for `aquasec/trivy` or `ghcr.io/aquasecurity/trivy`, and
+`anchore/grype` or `ghcr.io/anchore/grype`, using the newest tag present locally. If your registry renames them:
+
+```bash
+-e WIMI_TRIVY_IMAGE=registry.example.mil/mirror/trivy:0.75.0     # exact tag or @sha256 digest
+-e WIMI_GRYPE_IMAGE=registry.example.mil/mirror/grype            # no tag: newest local tag of this repository
+```
+
+Several candidates can be given, comma separated; the first one present is used. `wimi` never pulls a missing image
+unless `WIMI_SCANNER_PULL=true` (credentials come from `docker login`, as for scanning).
+
+**Pointing at your vulnerability database.** Every `TRIVY_*` variable is passed to the Trivy sidecar and every
+`GRYPE_*` variable to the Grype sidecar, exactly as a locally installed scanner would read them. When one of them names
+a path, the volume that `wimi` has mounted at that path is mounted at the same path in the sidecar (read-only if it is
+read-only for `wimi`). So the same settings work whether the scanner is a binary or a container:
+
+```bash
+docker run --rm \
+  -v /var/run/docker.sock:/var/run/docker.sock --group-add "$(stat -c %g /var/run/docker.sock)" \
+  -v vulndb:/vulndb:ro -v "$PWD/reports:/out" \
+  -e WIMI_TRIVY_IMAGE=registry.example.mil/mirror/trivy:0.75.0 \
+  -e TRIVY_CACHE_DIR=/vulndb/trivy -e TRIVY_SKIP_DB_UPDATE=true -e TRIVY_SKIP_JAVA_DB_UPDATE=true \
+  -e WIMI_GRYPE_IMAGE=registry.example.mil/mirror/grype:v0.120.1 \
+  -e GRYPE_DB_CACHE_DIR=/vulndb/grype -e GRYPE_DB_AUTO_UPDATE=false -e GRYPE_DB_VALIDATE_AGE=false \
+  -e GRYPE_CHECK_FOR_APP_UPDATE=false \
+  ghcr.io/willj4945/whats_in_my_image:latest registry.example.mil/team/app:1.2 --scan -o /out
+```
+
+* `vulndb` holds `trivy/db/` (and `trivy/java-db/` for Java) and `grype/6/`, refreshed whenever a new database is
+  brought across. On a connected machine, `trivy image --download-db-only --cache-dir DIR/trivy` (plus
+  `--download-java-db-only`) and `grype db update` with `GRYPE_DB_CACHE_DIR=DIR/grype` produce that layout.
+* `GRYPE_DB_VALIDATE_AGE=false` matters: by default Grype refuses a database more than a few days old.
+* Trivy's scan cache is kept in memory in a sidecar (`TRIVY_CACHE_BACKEND=memory` unless you set it), so the
+  database volume can be read-only.
+* The database files must be readable by the scanner image's user (usually root with all capabilities dropped,
+  so files owned by another user need to be world-readable: `chmod -R a+rX`), or set `WIMI_SCANNER_USER`.
+* `--group-add` lets the non-root `wimi` user use the socket.
+
+**What the report says.** The vulnerability section names the scanner and version, whether it ran as a binary or
+from which image (with its digest), and when its vulnerability data was built. If the data is more than 30 days old,
+the bottom line says so: vulnerabilities published since then are not in the report.
+
+| Variable                               | Default        | Purpose                                                                            |
+|----------------------------------------|----------------|------------------------------------------------------------------------------------|
+| `WIMI_TRIVY_IMAGE`, `WIMI_GRYPE_IMAGE` | upstream names | Scanner image(s) to use, comma separated                                           |
+| `WIMI_SCANNER_MODE`                    | `auto`         | `auto` (binary, then container), `binary`, `container` or `off`                    |
+| `WIMI_SCANNER_PULL`                    | `false`        | Pull a missing scanner image                                                       |
+| `WIMI_SCANNER_ENV`                     |                | More variables to pass to sidecars, comma separated (e.g. `SSL_CERT_FILE`)         |
+| `WIMI_VULNDB_MOUNT`                    | detected       | `SOURCE:/path[:ro\|rw]`, comma separated, to mount instead of the detected volumes |
+| `WIMI_SCANNER_TIMEOUT`                 | `1800`         | Seconds before a sidecar is stopped                                                |
+| `WIMI_SCANNER_MEMORY`                  | none           | Memory limit for a sidecar, e.g. `4g`                                              |
+| `WIMI_SCANNER_USER`                    | image's user   | User the sidecar runs as, e.g. `1001:0`                                            |
+| `WIMI_CONTAINER_ID`                    | detected       | `wimi`'s own container ID, if it cannot be detected (used to find its volumes)     |
+
+> **Security note.** Access to the container engine socket is equivalent to root on the host. Mount it only where
+> that is acceptable; otherwise install the scanner binaries, import a report with `--vuln-report`, or set
+> `WIMI_SCANNER_MODE=binary`. Kubernetes pods normally have no engine socket, so `--scan` falls back to an installed
+> binary or skips.
+
 ## What is supported
 
 * **Registries:** any registry that speaks the OCI Distribution API: Iron Bank (registry1.dso.mil), Docker Hub, GHCR, GitLab, Artifactory, Nexus, Quay, Red Hat, Harbor, ECR/ACR/GAR (with a token as the password). No particular registry is required.
 * **Image formats:** Docker v2 and OCI manifests, multi-arch indexes (`--platform`), gzip/zstd/uncompressed layers
 * **OS packages:** RPM (sqlite and Berkeley DB, so UBI 7/8/9/10, RHEL, Rocky, Alma, Fedora, Amazon Linux), Debian/Ubuntu (incl. distroless), Alpine/Wolfi
 * **Language packages:** Python (pip/wheel/egg), Node.js (npm/yarn), Java (jar/war/ear, incl. Spring Boot fat jars), Go (module list embedded in binaries, Go 1.18+)
-* **Vulnerability sources:** Trivy JSON, Grype JSON, or Harbor's own scan results (optional, Harbor users only)
+* **Vulnerability sources:** Trivy or Grype run by `wimi` (installed binary or container image), Trivy or Grype JSON reports, or Harbor's own scan results (optional, Harbor users only)
 
 ## Limitations
 
@@ -215,11 +303,11 @@ Trivy, Gitleaks, workflow security checks and OpenSSF Scorecard. Findings appear
 `main` and the release tags are protected by the GitHub rulesets in [.github/rulesets/](.github/rulesets/). To apply
 them, open **Settings → Rules → Rulesets → New ruleset → Import a ruleset** and import each file:
 
-| File | Effect |
-| --- | --- |
+| File                   | Effect                                                                                                                                                                      |
+|------------------------|-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
 | `main-protection.json` | Changes reach `main` only by pull request, all CI and Security checks must pass on an up-to-date branch, and `main` can't be force-pushed or deleted. Nobody can bypass it. |
-| `main-review.json` | Pull requests need one approving review. Repository admins may skip this when merging their own pull request, so a single maintainer isn't locked out. |
-| `release-tags.json` | Published `v*` tags can't be moved or deleted, so a signed release always points at the same commit. |
+| `main-review.json`     | Pull requests need one approving review. Repository admins may skip this when merging their own pull request, so a single maintainer isn't locked out.                      |
+| `release-tags.json`    | Published `v*` tags can't be moved or deleted, so a signed release always points at the same commit.                                                                        |
 
 ### Cutting a release
 

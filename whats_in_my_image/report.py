@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 from collections import Counter, defaultdict
-from datetime import datetime, timezone
+from datetime import date, datetime, timezone
 
 from . import __version__, describe
 from .analyze import OS_ECOSYSTEMS, TYPE_LABELS, as_dict
@@ -25,7 +25,7 @@ def _plural(n: int, word: str, plural: str | None = None) -> str:
     return f"{n:,} {word if n == 1 else (plural or word + 's')}"
 
 
-def build(image, walker, analyzer, origins, per_layer, notes, vulns, vuln_tool, app_name) -> dict:
+def build(image, walker, analyzer, origins, per_layer, notes, vulns, vuln_tool, app_name, vuln_scan=None) -> dict:
     history, aligned = image.layer_history()
     comps = [as_dict(c) for c in analyzer.components]
     origin_by_key = {o.key: o for o in origins}
@@ -141,6 +141,7 @@ def build(image, walker, analyzer, origins, per_layer, notes, vulns, vuln_tool, 
         "components": comps,
         "vulns": vdicts,
         "vuln_tool": vuln_tool,
+        "vuln_scan": _scan_details(vuln_scan),
         "findings": findings,
         "notes": notes + analyzer.notes,
         "removed_packages": analyzer.removed_packages,
@@ -380,6 +381,42 @@ def _flag_family(msg: str) -> str:
     return msg
 
 
+# Older vulnerability data than this is called out in the bottom line: anything published since is not reported.
+DB_AGE_WARN_DAYS = 30
+
+
+def _scan_details(scan: dict | None) -> dict:
+    """How the vulnerability scan ran (binary or container, scanner version, database date), with the database age."""
+    if not scan:
+        return {}
+    out = dict(scan)
+    try:
+        built = date.fromisoformat(str(scan.get("db_built", ""))[:10])
+    except ValueError:
+        return out
+    out["db_date"] = built.isoformat()
+    out["db_age_days"] = max(0, (datetime.now(timezone.utc).date() - built).days)
+    return out
+
+
+def scan_source(m: dict) -> str:
+    """One sentence on where the vulnerability data came from, e.g. for the report's vulnerability section."""
+    scan = m.get("vuln_scan") or {}
+    tool = m.get("vuln_tool") or "imported report"
+    if not scan:
+        return tool
+    how = "installed binary" if scan.get("mode") == "binary" else f"container image {scan.get('image', '')}"
+    if scan.get("image_digest"):
+        how += f" ({scan['image_digest'].rsplit('@', 1)[-1][:19]})"
+    text = f"{tool}, run from the {how}"
+    if "db_date" in scan:
+        age = scan["db_age_days"]
+        text += f"; vulnerability data built {scan['db_date']} ({_plural(age, 'day', 'days')} old)"
+    else:
+        text += "; the vulnerability data date could not be determined"
+    return text
+
+
 def _takeaways(m: dict) -> list[dict]:
     """The 'bottom line' for executives: short sentences, each backed by numbers in the report."""
     out = []
@@ -506,6 +543,16 @@ def _takeaways(m: dict) -> list[dict]:
                     "statement or POA&M entry) or a different component.",
                 }
             )
+    scan = m.get("vuln_scan") or {}
+    if vulns is not None and scan.get("db_age_days", 0) > DB_AGE_WARN_DAYS:
+        out.append(
+            {
+                "tone": "warn",
+                "text": f"The vulnerability data used for this scan is {scan['db_age_days']} days old (built "
+                f"{scan['db_date']}). Vulnerabilities published since then are not reported; refresh the "
+                "database and scan again.",
+            }
+        )
     if vulns is None:
         out.append(
             {

@@ -6,6 +6,7 @@ import math
 from collections import Counter
 from html import escape
 
+from .report import scan_source
 from .vulns import FIX_STATUSES, SEVERITIES
 
 ORIGIN_SLOTS = ["var(--series-1)", "var(--series-3)", "var(--series-7)", "var(--series-5)"]
@@ -255,7 +256,7 @@ def render(m: dict) -> str:
         vuln_chart = f"""
 <div class="card">
   <h3>Known vulnerabilities by severity and origin</h3>
-  <p class="sub">Source: {e(m["vuln_tool"] or "imported report")}. Each vulnerability is attributed to the layer that
+  <p class="sub">Source: {e(scan_source(m))}. Each vulnerability is attributed to the layer that
   installed the affected version of the component.</p>
   <div class="legend">{vlegend}</div>
   <div class="vchart">{rows if vulns else "<p>No known vulnerabilities reported.</p>"}</div>

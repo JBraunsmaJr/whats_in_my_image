@@ -9,6 +9,11 @@ on:
 permissions:
   contents: read
 
+env:
+  # Same pin as security.yml / release.yml. Used here to build a stand-in "mirrored" scanner image.
+  TRIVY_VERSION: "0.75.0"
+  TRIVY_SHA256: "c6e65abddb348e25f10549df887045629cf28cc72453cd1c63acb717316b3f3f"
+
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
@@ -73,8 +78,63 @@ jobs:
         run: |
           docker build -t wimi:ci .
           docker run --rm wimi:ci --version
+      - name: Container image also builds from a clean checkout (wheel built inside the Dockerfile)
+        run: |
+          mv dist "$RUNNER_TEMP/dist-saved"
+          docker build -t wimi:from-source .
+          docker run --rm wimi:from-source --version
+          mv "$RUNNER_TEMP/dist-saved" dist
       - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
           name: dist
           path: dist/
           if-no-files-found: error
+
+  sidecar:
+    name: Scanner sidecar (container engine)
+    needs: [build]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - name: Build the wimi image (no scanners inside)
+        run: docker build -t wimi:ci .
+      - name: Build a "mirrored" Trivy image from the checksum-verified release
+        run: |
+          curl -sSfL -o trivy.tgz "https://github.com/aquasecurity/trivy/releases/download/v${TRIVY_VERSION}/trivy_${TRIVY_VERSION}_Linux-64bit.tar.gz"
+          echo "${TRIVY_SHA256}  trivy.tgz" | sha256sum --check --strict
+          mkdir trivy-img && tar -xzf trivy.tgz -C trivy-img trivy && rm trivy.tgz
+          printf 'FROM scratch\nWORKDIR /tmp\nCOPY trivy /usr/local/bin/trivy\nENTRYPOINT ["/usr/local/bin/trivy"]\n' > trivy-img/Dockerfile
+          docker build -t "registry.airgap.local/mirror/trivy:${TRIVY_VERSION}" trivy-img
+      - name: Download the vulnerability database into a volume (the "air-gap transfer")
+        run: |
+          ./trivy-img/trivy image --download-db-only --cache-dir "$RUNNER_TEMP/vulndb/trivy"
+          chmod -R a+rX "$RUNNER_TEMP/vulndb"
+          docker volume create wimi-vulndb
+          c=$(docker create -v wimi-vulndb:/vulndb wimi:ci)
+          docker cp "$RUNNER_TEMP/vulndb/trivy" "$c:/vulndb/"
+          docker rm "$c"
+      - name: Scan with Trivy running as a sidecar, offline database
+        run: |
+          docker save wimi:ci -o "$RUNNER_TEMP/target.tar" && chmod 644 "$RUNNER_TEMP/target.tar"
+          mkdir -p reports && chmod 777 reports
+          docker run --rm \
+            -v /var/run/docker.sock:/var/run/docker.sock --group-add "$(stat -c %g /var/run/docker.sock)" \
+            -v wimi-vulndb:/vulndb:ro -v "$RUNNER_TEMP/target.tar:/in/target.tar:ro" -v "$PWD/reports:/out" \
+            -e WIMI_TRIVY_IMAGE=registry.airgap.local/mirror/trivy \
+            -e TRIVY_CACHE_DIR=/vulndb/trivy -e TRIVY_SKIP_DB_UPDATE=true -e TRIVY_SKIP_JAVA_DB_UPDATE=true \
+            wimi:ci /in/target.tar --scan --no-catalog -o /out --formats json
+      - name: Check the scan ran in a sidecar and the container was cleaned up
+        run: |
+          python3 - <<'PY'
+          import glob, json
+          m = json.load(open(glob.glob("reports/provenance-*.json")[0]))
+          scan = m["vuln_scan"]
+          print(json.dumps(scan, indent=2))
+          assert m["vulns"] is not None, "no vulnerability results"
+          assert scan["mode"] == "container", scan
+          assert scan["image"].startswith("registry.airgap.local/mirror/trivy"), scan
+          assert scan.get("db_date"), "database date missing"
+          PY
+          test -z "$(docker ps -aq --filter label=wimi.scan)"

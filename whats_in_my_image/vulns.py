@@ -8,13 +8,11 @@ from __future__ import annotations
 
 import json
 import re
-import shutil
-import subprocess
-import tempfile
 import urllib.parse
 from dataclasses import asdict, dataclass
 from pathlib import Path
 
+from . import scanners
 from .parsers.ecosystems import normalize_pypi
 
 SEVERITIES = ["CRITICAL", "HIGH", "MEDIUM", "LOW", "UNKNOWN"]
@@ -163,31 +161,16 @@ def load_report(path: Path, diff_index: dict[str, int]) -> list[Vuln]:
     raise ValueError(f"{path} is not a Trivy, Grype or Harbor vulnerability report")
 
 
-def run_scanner(which: str, image, log) -> tuple[str, list[Vuln]] | None:
-    """Run Trivy or Grype (whichever is installed) against the exact layers we analysed."""
-    tools = ["trivy", "grype"] if which == "auto" else [which]
-    tools = [t for t in tools if shutil.which(t)]
-    if not tools:
-        if which != "auto":
-            log(f"  {which} is not installed; skipping vulnerability scan")
-        return None
+def run_scanner(which: str, image, log) -> tuple[str, list[Vuln], dict] | None:
+    """Run Trivy or Grype against the exact layers we analysed: the installed binary if there is one, otherwise the
+    scanner's container image if a container engine is reachable (see scanners.py). Returns (tool, findings, info),
+    where info describes how the scan ran (binary or container, version, database date) for the report."""
     diff_index = {d: i for i, d in enumerate(image.diff_ids)}
-    with tempfile.TemporaryDirectory(prefix="wimi-scan-") as tmp:
-        archive = image.write_docker_archive(Path(tmp) / "image.tar")
-        for tool in tools:
-            log(f"Running {tool} vulnerability scan (this can take a few minutes the first time) ...")
-            if tool == "trivy":
-                cmd = ["trivy", "image", "--input", str(archive), "--format", "json", "--quiet", "--scanners", "vuln"]
-            else:
-                cmd = ["grype", f"docker-archive:{archive}", "-o", "json", "-q"]
-            # fixed argv built above, no shell; the scanner binary was resolved with shutil.which
-            res = subprocess.run(cmd, capture_output=True, text=True)  # nosec B603
-            if res.returncode != 0 or not res.stdout.strip():
-                log(f"  {tool} failed: {res.stderr.strip()[:400]}")
-                continue
-            doc = json.loads(res.stdout)
-            return tool, (parse_trivy if tool == "trivy" else parse_grype)(doc, diff_index)
-    return None
+    res = scanners.run(which, image.write_docker_archive, log)
+    if res is None:
+        return None
+    parse = parse_trivy if res.tool == "trivy" else parse_grype
+    return res.tool, parse(res.doc, diff_index), res.info
 
 
 def fetch_harbor(image, log) -> list[Vuln] | None:
