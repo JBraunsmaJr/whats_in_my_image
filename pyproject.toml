@@ -36,8 +36,3 @@ select = ["E", "F", "W", "B", "UP", "I"]
 exclude_dirs = ["tests"]
 # Importing subprocess is not itself a risk; each call site is reviewed and annotated instead.
 skips = ["B404"]
-
-[dependency-groups]
-dev = [
-    "build>=1.4.4",
-]

@@ -51,8 +51,10 @@ EPILOG = textwrap.dedent("""\
       WIMI_SCANNER_MODE                      auto (default) | binary | container | off
       WIMI_SCANNER_PULL                      true to pull a missing scanner image (default: never pull)
       TRIVY_* / GRYPE_*                      passed to the sidecar, e.g. TRIVY_CACHE_DIR, GRYPE_DB_CACHE_DIR; the volume
-                                             holding a path they name is shared at the same path
-      WIMI_SCANNER_ENV                       more variable names to pass through, comma separated
+                                             holding a path they name is shared at the same path, read-only
+                                             (only the scanner's database directory is writable)
+      WIMI_SCANNER_ENV                       more variable names to pass through, comma separated; everything passed
+                                             is visible to the scanner image
       WIMI_VULNDB_MOUNT                      SOURCE:/path[:ro|rw] to share instead of the detected volumes
       WIMI_SCANNER_TIMEOUT / _MEMORY / _USER sidecar limits (default 1800 seconds, no memory limit, image's user);
                                              memory as 512m, 4g, 4GiB ...

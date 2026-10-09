@@ -17,7 +17,8 @@ All notable changes to this project are documented here. The format follows
   whose newest local tag is used). Missing images are never pulled unless `WIMI_SCANNER_PULL=true`.
 - `TRIVY_*` / `GRYPE_*` variables (and any named in `WIMI_SCANNER_ENV`) are passed to the sidecar, and the volume
   holding a path they name (for example the vulnerability database in `TRIVY_CACHE_DIR`) is mounted at the same path,
-  so air-gapped database settings work the same for binaries and sidecars. `WIMI_VULNDB_MOUNT` overrides detection.
+  so air-gapped database settings work the same for binaries and sidecars. Shared paths are read-only except the
+  scanner's database directory (`TRIVY_CACHE_DIR` / `GRYPE_DB_CACHE_DIR`). `WIMI_VULNDB_MOUNT` overrides detection.
 - `WIMI_SCANNER_MODE` (`auto`, `binary`, `container`, `off`), `WIMI_SCANNER_TIMEOUT`, `WIMI_SCANNER_MEMORY`,
   `WIMI_SCANNER_USER`. Sidecars run on the engine's default network.
 - The report records how the scan ran (binary or container image and digest), the scanner version, and the date its
@@ -28,10 +29,13 @@ All notable changes to this project are documented here. The format follows
 
 - README is now a short landing page that links into the documentation site.
 - The sample report moved from `docs/index.html` to `docs/sample-report.html`.
- Build
-  arguments `PIP_INDEX_URL` (and `PIP_EXTRA_INDEX_URL`, `PIP_TRUSTED_HOST`) point the build at a PyPI mirror on
-  disconnected networks. The release workflow passes its signed wheel in with `--build-arg WHEEL=dist
-  --build-context dist=dist/`, so released images contain exactly that wheel.
+- `docker build .` now works from a clean checkout: the Dockerfile builds the wheel from source in a first stage, so
+  no local `python -m build` is needed, and a leftover wheel in `dist/` can never end up in the image. The build
+  backend is pinned by version and hash in `requirements-build.txt`. Build arguments `PIP_INDEX_URL` (and
+  `PIP_EXTRA_INDEX_URL`, `PIP_TRUSTED_HOST`) point the build at a PyPI mirror on disconnected networks. The release
+  workflow passes its signed wheel in with `--build-arg WHEEL=dist --build-context dist=dist/`, so released images
+  contain exactly that wheel.
+- The "Scanner sidecar (container engine)" CI job is a required check on `main`.
 
 ## [0.2.0] - 2026-10-02
 

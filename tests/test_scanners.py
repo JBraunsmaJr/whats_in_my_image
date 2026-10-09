@@ -270,16 +270,54 @@ class SidecarRuns(SidecarTestCase):
         self.assertTrue(any("WIMI_SCANNER_MEMORY" in m and "without a memory limit" in m for m in self.logs))
         self.assertTrue(any("WIMI_SCANNER_TIMEOUT='soon'" in m for m in self.logs))
 
-    def test_host_mode_shares_paths_writable(self):
+    def test_host_mode_shares_only_the_database_writable(self):
         self.engine.add_image("sha256:" + "1" * 64, ["aquasec/trivy:latest"], 1)
-        os.environ["TRIVY_CACHE_DIR"] = self.tmp.name
+        db, ca = Path(self.tmp.name, "db"), Path(self.tmp.name, "ca.pem")
+        db.mkdir()
+        ca.write_text("canary")
+        os.environ.update({"TRIVY_CACHE_DIR": str(db), "SSL_CERT_FILE": str(ca), "WIMI_SCANNER_ENV": "SSL_CERT_FILE"})
         with mock.patch.object(eng, "in_container", return_value=False):
             self.run_scan("trivy")
         (spec,) = self.engine.created.values()
         self.assertEqual(
             spec["HostConfig"]["Mounts"],
-            [{"Type": "bind", "Source": self.tmp.name, "Target": self.tmp.name, "ReadOnly": False}],
+            [
+                {"Type": "bind", "Source": str(ca), "Target": str(ca), "ReadOnly": True},
+                {"Type": "bind", "Source": str(db), "Target": str(db), "ReadOnly": False},
+            ],
         )
+        self.assertTrue(any(f"sharing {ca} at {ca} (read-only)" in m for m in self.logs), self.logs)
+
+    def test_host_mode_database_variable_does_not_make_other_paths_writable(self):
+        self.engine.add_image("sha256:" + "1" * 64, ["anchore/grype:latest"], 1)
+        db = Path(self.tmp.name, "grype-db")
+        db.mkdir()
+        os.environ.update({"GRYPE_DB_CACHE_DIR": str(db), "GRYPE_CONFIG": self.tmp.name})
+        with mock.patch.object(eng, "in_container", return_value=False):
+            self.run_scan("grype")
+        (spec,) = self.engine.created.values()
+        mounts = {m["Source"]: m["ReadOnly"] for m in spec["HostConfig"]["Mounts"]}
+        self.assertEqual(mounts, {self.tmp.name: True, str(db): False})
+
+    def test_container_mode_shares_writable_volumes_read_only_unless_they_hold_the_database(self):
+        self.engine.add_image("sha256:" + "1" * 64, ["aquasec/trivy:latest"], 1)
+        os.environ.update(
+            {
+                "TRIVY_CACHE_DIR": "/vulndb/trivy",
+                "SSL_CERT_FILE": "/certs/ca.pem",
+                "WIMI_SCANNER_ENV": "SSL_CERT_FILE",
+            }
+        )
+        self.in_container(
+            [
+                {"Type": "volume", "Name": "vulndb", "Source": "/var/lib/x", "Destination": "/vulndb", "RW": True},
+                {"Type": "bind", "Source": "/etc/pki/tls", "Destination": "/certs", "RW": True},
+            ]
+        )
+        self.assertIsNotNone(self.run_scan("trivy"), self.logs)
+        (spec,) = self.engine.created.values()
+        mounts = {m["Target"]: m["ReadOnly"] for m in spec["HostConfig"]["Mounts"]}
+        self.assertEqual(mounts, {"/vulndb": False, "/certs": True})
 
     def test_trivy_db_date_only_from_a_database_shared_with_the_sidecar(self):
         self.engine.add_image("sha256:" + "1" * 64, ["aquasec/trivy:latest"], 1)

@@ -1,5 +1,6 @@
 *
 !pyproject.toml
+!requirements-build.txt
 !README.md
 !LICENSE
 !NOTICE

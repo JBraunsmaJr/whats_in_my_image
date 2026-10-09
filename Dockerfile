@@ -15,22 +15,31 @@ ARG WHEEL=source
 # ---- wheel built from source (default)
 FROM ${BASE_IMAGE} AS wheel-source
 
-# Building from source fetches the build backend (setuptools) from a package index. On a disconnected network,
-# point it at your mirror: docker build --build-arg PIP_INDEX_URL=https://nexus.example.mil/repository/pypi/simple .
+# Building from source fetches the build backend (setuptools) from a package index, pinned by version and hash in
+# requirements-build.txt. On a disconnected network, point it at your mirror:
+#   docker build --build-arg PIP_INDEX_URL=https://nexus.example.mil/repository/pypi/simple .
 ARG PIP_INDEX_URL
 ARG PIP_EXTRA_INDEX_URL
 ARG PIP_TRUSTED_HOST
 
 USER 1001
 WORKDIR /tmp/src
+COPY --chown=1001:0 requirements-build.txt ./
+RUN set -eu; \
+    python3 -m venv /tmp/build-env; \
+    /tmp/build-env/bin/python -m pip install --no-cache-dir --require-hashes --only-binary :all: \
+        -r requirements-build.txt
 COPY --chown=1001:0 . .
 RUN set -eu; \
     mkdir -p /tmp/wheels; \
-    python3 -m pip wheel --no-cache-dir --no-deps --wheel-dir /tmp/wheels .; \
+    /tmp/build-env/bin/python -m pip wheel --no-cache-dir --no-deps --no-build-isolation --wheel-dir /tmp/wheels .; \
     ls -l /tmp/wheels
 
 # ---- placeholder for the `dist` build context. `--build-context dist=dist/` replaces this empty stage; without it,
 # WHEEL=dist finds no wheel and says how to pass one, instead of trying to pull an image called "dist".
+# Caveat: BuildKit can reuse the cached `COPY --from=dist` layer from an earlier WHEEL=dist build, so running
+# WHEEL=dist without --build-context may silently reuse the old wheel instead of failing. Always pass the context
+# (as the release workflow does on a fresh runner), or add --no-cache when switching between local wheel builds.
 FROM scratch AS dist
 
 # ---- prebuilt wheel from the `dist` build context (release workflow). Only built when WHEEL=dist.

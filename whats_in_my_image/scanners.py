@@ -12,6 +12,10 @@ capabilities, the engine's default network, and only the environment variables m
 for that scanner (``TRIVY_*`` / ``GRYPE_*`` plus any named in ``WIMI_SCANNER_ENV``). If a forwarded variable points
 at a path (for example ``TRIVY_CACHE_DIR=/vulndb/trivy``), the volume wimi has mounted at that path is mounted at the
 same path in the sidecar, so the same settings work for binaries and sidecars alike.
+
+Everything forwarded is visible to the scanner image, so only forward what that image may read. Shared paths are
+read-only, except the scanner's database directory (``TRIVY_CACHE_DIR`` / ``GRYPE_DB_CACHE_DIR``), which it may need
+to update.
 """
 
 from __future__ import annotations
@@ -56,6 +60,12 @@ TOOLS = {
 # database by default; a throwaway container gains nothing from it, and keeping it in memory means the database
 # volume can be mounted read-only.
 SIDECAR_DEFAULT_ENV = {"trivy": {"TRIVY_CACHE_BACKEND": "memory"}, "grype": {}}
+
+# Paths a scanner is expected to write to (its vulnerability database, which it may download or refresh). Every other
+# path shared with a sidecar is mounted read-only: the scanner image usually runs as root, which on a rootful engine is
+# host uid 0 and can write root-owned files without any capability, so a writable CA bundle or config file would let a
+# compromised scanner image change the host's trust store.
+WRITABLE_ENV = frozenset({"TRIVY_CACHE_DIR", "GRYPE_DB_CACHE_DIR"})
 
 
 @dataclass
@@ -297,10 +307,13 @@ def sidecar_mounts(engine: eng.Engine, env: dict[str, str], log) -> list[dict]:
     paths = sorted({v for v in env.values() if v.startswith("/")})
     if not paths:
         return []
+    writable = {v for k, v in env.items() if k in WRITABLE_ENV and v.startswith("/")}
     if not eng.in_container():
-        # wimi runs on the host next to a local engine: share the same host paths. Writable, as they are for wimi
-        # and for an installed scanner, so a connected scanner can download or refresh its database there.
-        return [{"Type": "bind", "Source": p, "Target": p, "ReadOnly": False} for p in paths if Path(p).exists()]
+        # wimi runs on the host next to a local engine: share the same host paths. Only the database directories are
+        # writable (so a connected scanner can download or refresh its database there); everything else is read-only.
+        return [
+            {"Type": "bind", "Source": p, "Target": p, "ReadOnly": p not in writable} for p in paths if Path(p).exists()
+        ]
     me = None
     for cid in eng.own_container_ids():
         me = engine.container_inspect(cid)
@@ -322,11 +335,15 @@ def sidecar_mounts(engine: eng.Engine, env: dict[str, str], log) -> list[dict]:
             log(f"  {names}={p} is not on a mounted volume, so the scanner container cannot see it")
             continue
         m = max(hits, key=lambda m: len(m["Destination"]))
+        # Read-only unless wimi itself has it writable AND it holds a scanner database. One volume can hold several
+        # forwarded paths, so it becomes writable as soon as any database path lies on it.
+        rw = m.get("RW", True) and p in writable
+        prev = chosen.get(m["Destination"])
         chosen[m["Destination"]] = {
             "Type": m["Type"],
             "Source": m.get("Name") if m["Type"] == "volume" else m["Source"],
             "Target": m["Destination"],
-            "ReadOnly": not m.get("RW", True),
+            "ReadOnly": not (rw or (prev is not None and not prev["ReadOnly"])),
         }
     return list(chosen.values())
 
