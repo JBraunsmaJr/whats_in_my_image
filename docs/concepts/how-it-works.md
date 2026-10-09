@@ -17,15 +17,15 @@ flowchart LR
 
 ## Why the answer can be trusted
 
-| Question | How `wimi` answers it | Strength of evidence |
-| --- | --- | --- |
-| Which layers came from the base image? | Layer SHA-256 digests compared with known base images, from the [base image catalog](../guide/catalog.md) or `--base` | **Cryptographic proof** (identical digest = identical bytes) |
-| Who installed each OS package? | The RPM/dpkg/apk database is read at *every* layer, so each package is credited to the layer that installed its current version | Exact |
-| Who built and signed each RPM? | Signing key ID from the package's OpenPGP signature, Vendor field, build host | Exact (e.g. `199E2F91FD431D51` = Red Hat release key 2) |
-| Which repository did it come from? | dnf/microdnf history database (`ubi-9-baseos-rpms`, `epel`, `@commandline` ...) | Exact, when the history file is present |
-| What about pip/npm/Maven/Go libraries? | Their own metadata (`dist-info`, `package.json`, `pom.properties`, Go build info) | Exact |
-| What about loose binaries? | Every executable is checked against all package file lists; anything unowned is flagged with its SHA-256 and the build step that added it | Exact as far as the build step |
-| Who introduced each CVE? | Each finding from your scanner (Trivy, Grype, or Harbor's built-in scan) is matched to the traced component | Exact when matched (shown per finding) |
+| Question                               | How `wimi` answers it                                                                                                                     | Strength of evidence                                         |
+|----------------------------------------|-------------------------------------------------------------------------------------------------------------------------------------------|--------------------------------------------------------------|
+| Which layers came from the base image? | Layer SHA-256 digests compared with known base images, from the [base image catalog](../guide/catalog.md) or `--base`                     | **Cryptographic proof** (identical digest = identical bytes) |
+| Who installed each OS package?         | The RPM/dpkg/apk database is read at *every* layer, so each package is credited to the layer that installed its current version           | Exact                                                        |
+| Who built and signed each RPM?         | Signing key ID from the package's OpenPGP signature, Vendor field, build host                                                             | Exact (e.g. `199E2F91FD431D51` = Red Hat release key 2)      |
+| Which repository did it come from?     | dnf/microdnf history database (`ubi-9-baseos-rpms`, `epel`, `@commandline` ...)                                                           | Exact, when the history file is present                      |
+| What about pip/npm/Maven/Go libraries? | Their own metadata (`dist-info`, `package.json`, `pom.properties`, Go build info)                                                         | Exact                                                        |
+| What about loose binaries?             | Every executable is checked against all package file lists; anything unowned is flagged with its SHA-256 and the build step that added it | Exact as far as the build step                               |
+| Who introduced each CVE?               | Each finding from your scanner (Trivy, Grype, or Harbor's built-in scan) is matched to the traced component                               | Exact when matched (shown per finding)                       |
 
 ## Layer by layer, not just the final image
 

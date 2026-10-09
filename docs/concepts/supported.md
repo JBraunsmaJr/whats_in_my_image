@@ -1,11 +1,11 @@
 # What is supported
 
-| Area | Supported |
-| --- | --- |
-| **Registries** | Any registry that speaks the OCI Distribution API: Iron Bank (registry1.dso.mil), Docker Hub, GHCR, GitLab, Artifactory, Nexus, Quay, Red Hat, Harbor, ECR/ACR/GAR (with a token as the password). No particular registry is required. |
-| **Image sources** | Registries, `docker save` / `podman save` archives, OCI archives and layouts, the local Docker or Podman engine. See [Image sources](../guide/image-sources.md). |
-| **Image formats** | Docker v2 and OCI manifests, multi-arch indexes (`--platform`), gzip, zstd and uncompressed layers. |
-| **OS packages** | RPM (sqlite and Berkeley DB, so UBI 7/8/9/10, RHEL, Rocky, Alma, Fedora, Amazon Linux), Debian/Ubuntu (including distroless), Alpine/Wolfi. |
-| **Language packages** | Python (pip/wheel/egg), Node.js (npm/yarn), Java (jar/war/ear, including Spring Boot fat jars), Go (module list embedded in binaries, Go 1.18+). |
-| **Vulnerability sources** | Trivy JSON, Grype JSON, or Harbor's own scan results (optional, Harbor users only). |
-| **Runtime** | Python 3.9 to 3.14, standard library only. |
+| Area                      | Supported                                                                                                                                                                                                                              |
+|---------------------------|----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| **Registries**            | Any registry that speaks the OCI Distribution API: Iron Bank (registry1.dso.mil), Docker Hub, GHCR, GitLab, Artifactory, Nexus, Quay, Red Hat, Harbor, ECR/ACR/GAR (with a token as the password). No particular registry is required. |
+| **Image sources**         | Registries, `docker save` / `podman save` archives, OCI archives and layouts, the local Docker or Podman engine. See [Image sources](../guide/image-sources.md).                                                                       |
+| **Image formats**         | Docker v2 and OCI manifests, multi-arch indexes (`--platform`), gzip, zstd and uncompressed layers.                                                                                                                                    |
+| **OS packages**           | RPM (sqlite and Berkeley DB, so UBI 7/8/9/10, RHEL, Rocky, Alma, Fedora, Amazon Linux), Debian/Ubuntu (including distroless), Alpine/Wolfi.                                                                                            |
+| **Language packages**     | Python (pip/wheel/egg), Node.js (npm/yarn), Java (jar/war/ear, including Spring Boot fat jars), Go (module list embedded in binaries, Go 1.18+).                                                                                       |
+| **Vulnerability sources** | Trivy JSON, Grype JSON, or Harbor's own scan results (optional, Harbor users only).                                                                                                                                                    |
+| **Runtime**               | Python 3.9 to 3.14, standard library only.                                                                                                                                                                                             |

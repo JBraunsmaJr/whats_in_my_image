@@ -5,18 +5,18 @@ lint tools.
 
 ## Layout
 
-| Path | Contents |
-| --- | --- |
-| `whats_in_my_image/cli.py` | Command line, base resolution and output writing. |
-| `whats_in_my_image/sources.py`, `registry.py` | Reading images from registries, archives, OCI layouts and local engines. |
-| `whats_in_my_image/walker.py` | Walks the layers in build order and snapshots package databases at each one. |
-| `whats_in_my_image/parsers/` | RPM, Go build info and language ecosystem parsers. |
-| `whats_in_my_image/analyze.py` | Origins, component attribution, supplier evidence and findings. |
-| `whats_in_my_image/catalog.py` | The base image catalog. |
-| `whats_in_my_image/vulns.py` | Scanner import and vulnerability attribution. |
-| `whats_in_my_image/report.py`, `html_report.py` | The report model, and the HTML renderer. |
-| `tests/` | Offline tests that build synthetic images. |
-| `docs/`, `mkdocs.yml` | This documentation site. |
+| Path                                            | Contents                                                                     |
+|-------------------------------------------------|------------------------------------------------------------------------------|
+| `whats_in_my_image/cli.py`                      | Command line, base resolution and output writing.                            |
+| `whats_in_my_image/sources.py`, `registry.py`   | Reading images from registries, archives, OCI layouts and local engines.     |
+| `whats_in_my_image/walker.py`                   | Walks the layers in build order and snapshots package databases at each one. |
+| `whats_in_my_image/parsers/`                    | RPM, Go build info and language ecosystem parsers.                           |
+| `whats_in_my_image/analyze.py`                  | Origins, component attribution, supplier evidence and findings.              |
+| `whats_in_my_image/catalog.py`                  | The base image catalog.                                                      |
+| `whats_in_my_image/vulns.py`                    | Scanner import and vulnerability attribution.                                |
+| `whats_in_my_image/report.py`, `html_report.py` | The report model, and the HTML renderer.                                     |
+| `tests/`                                        | Offline tests that build synthetic images.                                   |
+| `docs/`, `mkdocs.yml`                           | This documentation site.                                                     |
 
 ## Checks
 
