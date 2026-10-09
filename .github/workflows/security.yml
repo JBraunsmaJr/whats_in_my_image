@@ -90,14 +90,14 @@ jobs:
           echo "${TRIVY_SHA256}  trivy.tgz" | sha256sum --check --strict
           tar -xzf trivy.tgz trivy && sudo mv trivy /usr/local/bin/ && rm trivy.tgz
       - name: Report all findings (SARIF)
-        run: trivy fs --scanners vuln,secret,misconfig --format sarif --output trivy.sarif --skip-dirs examples,docs .
+        run: trivy fs --scanners vuln,secret,misconfig --format sarif --output trivy.sarif --skip-dirs examples --skip-files docs/sample-report.html .
       - uses: github/codeql-action/upload-sarif@2892aa5e19bbd11bc0cff5427e3b750a04d9e3c2 # v4.38.2
         if: always() && hashFiles('trivy.sarif') != ''
         with:
           sarif_file: trivy.sarif
           category: trivy
       - name: Fail on high or critical findings
-        run: trivy fs --scanners vuln,secret,misconfig --severity HIGH,CRITICAL --exit-code 1 --skip-dirs examples,docs .
+        run: trivy fs --scanners vuln,secret,misconfig --severity HIGH,CRITICAL --exit-code 1 --skip-dirs examples --skip-files docs/sample-report.html .
 
   gitleaks:
     name: Gitleaks (secrets in full git history)

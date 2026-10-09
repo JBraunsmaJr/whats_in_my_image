@@ -1,0 +1,139 @@
+site_name: What's In My Image
+site_description: Trace every package, library and program in a container image to the base image or build step that put it there.
+site_url: https://willj4945.github.io/whats_in_my_image/
+repo_url: https://github.com/willj4945/whats_in_my_image
+repo_name: willj4945/whats_in_my_image
+edit_uri: edit/main/docs/
+copyright: Copyright &copy; the What's In My Image authors. Apache License 2.0.
+
+theme:
+  name: material
+  logo: assets/logo.svg
+  favicon: assets/logo.svg
+  icon:
+    repo: fontawesome/brands/github
+  palette:
+    - media: "(prefers-color-scheme)"
+      toggle:
+        icon: material/brightness-auto
+        name: Switch to light mode
+    - media: "(prefers-color-scheme: light)"
+      scheme: default
+      primary: custom
+      accent: custom
+      toggle:
+        icon: material/weather-sunny
+        name: Switch to dark mode
+    - media: "(prefers-color-scheme: dark)"
+      scheme: slate
+      primary: custom
+      accent: custom
+      toggle:
+        icon: material/weather-night
+        name: Switch to system preference
+  features:
+    - navigation.tabs
+    - navigation.tabs.sticky
+    - navigation.sections
+    - navigation.indexes
+    - navigation.top
+    - navigation.footer
+    - navigation.instant
+    - search.suggest
+    - search.highlight
+    - content.code.copy
+    - content.code.annotate
+    - content.tabs.link
+    - content.action.edit
+    - toc.follow
+
+extra_css:
+  - assets/extra.css
+
+extra:
+  social:
+    - icon: fontawesome/brands/github
+      link: https://github.com/willj4945/whats_in_my_image
+    - icon: fontawesome/brands/docker
+      link: https://github.com/willj4945/whats_in_my_image/pkgs/container/whats_in_my_image
+
+markdown_extensions:
+  - admonition
+  - attr_list
+  - def_list
+  - footnotes
+  - md_in_html
+  - tables
+  - toc:
+      permalink: true
+  - pymdownx.details
+  - pymdownx.emoji:
+      emoji_index: !!python/name:material.extensions.emoji.twemoji
+      emoji_generator: !!python/name:material.extensions.emoji.to_svg
+  - pymdownx.highlight:
+      anchor_linenums: true
+  - pymdownx.inlinehilite
+  - pymdownx.keys
+  - pymdownx.snippets:
+      base_path: ["."]
+      check_paths: true
+  - pymdownx.superfences:
+      custom_fences:
+        - name: mermaid
+          class: mermaid
+          format: !!python/name:pymdownx.superfences.fence_code_format
+  - pymdownx.tabbed:
+      alternate_style: true
+
+plugins:
+  - search
+
+hooks:
+  - docs/hooks.py
+
+exclude_docs: |
+  __pycache__/
+  hooks.py
+  requirements.in
+  requirements.txt
+
+not_in_nav: |
+  sample-report.html
+
+nav:
+  - Home: index.md
+  - Getting started:
+      - getting-started/index.md
+      - Installation: getting-started/installation.md
+      - Quick start: getting-started/quickstart.md
+      - Verifying a release: getting-started/verify.md
+  - User guide:
+      - guide/index.md
+      - Image sources: guide/image-sources.md
+      - Naming the base image: guide/base-images.md
+      - Base image catalog: guide/catalog.md
+      - Vulnerabilities: guide/vulnerabilities.md
+      - Registry access: guide/registry-access.md
+  - Reports:
+      - reports/index.md
+      - The HTML report: reports/html-report.md
+      - JSON and CSV: reports/data-exports.md
+  - CI/CD:
+      - ci/index.md
+      - GitLab CI: ci/gitlab.md
+      - GitHub Actions: ci/github-actions.md
+  - Concepts:
+      - concepts/index.md
+      - How attribution works: concepts/how-it-works.md
+      - What is supported: concepts/supported.md
+      - Limitations: concepts/limitations.md
+  - Reference:
+      - reference/index.md
+      - Command line: reference/cli.md
+      - Environment variables: reference/environment.md
+  - Developer guide:
+      - developer/index.md
+      - Branch protection: developer/branch-protection.md
+      - Cutting a release: developer/releasing.md
+      - Security: developer/security.md
+      - Changelog: developer/changelog.md
