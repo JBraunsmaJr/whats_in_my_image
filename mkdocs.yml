@@ -113,6 +113,7 @@ nav:
       - Naming the base image: guide/base-images.md
       - Base image catalog: guide/catalog.md
       - Vulnerabilities: guide/vulnerabilities.md
+      - Scanner containers: guide/scanner-containers.md
       - Registry access: guide/registry-access.md
   - Reports:
       - reports/index.md
