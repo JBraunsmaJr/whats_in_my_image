@@ -133,6 +133,7 @@ nav:
       - Environment variables: reference/environment.md
   - Developer guide:
       - developer/index.md
+      - Local testbed: developer/testbed.md
       - Branch protection: developer/branch-protection.md
       - Cutting a release: developer/releasing.md
       - Security: developer/security.md
