@@ -5,6 +5,16 @@ All notable changes to this project are documented here. The format follows
 
 ## [Unreleased]
 
+### Added
+
+- Documentation site at https://willj4945.github.io/whats_in_my_image/, built with Material for MkDocs and published
+  to GitHub Pages from `main`. The command line reference is generated from `wimi --help`.
+
+### Changed
+
+- README is now a short landing page that links into the documentation site.
+- The sample report moved from `docs/index.html` to `docs/sample-report.html`.
+
 ## [0.2.0] - 2026-10-02
 
 Identifies base images automatically, explains why vulnerabilities have no fix, and adds a layer cake view.

@@ -1,0 +1,44 @@
+/* Colours match the HTML report: navy header, blue for base image, orange for application build. */
+:root {
+  --md-primary-fg-color: #0f1b2d;
+  --md-primary-fg-color--light: #1d2f4a;
+  --md-primary-fg-color--dark: #0a1220;
+  --md-accent-fg-color: #2a78d6;
+}
+[data-md-color-scheme="slate"] {
+  --md-primary-fg-color: #111a28;
+  --md-accent-fg-color: #3987e5;
+  --md-default-bg-color: #0d0d0d;
+}
+
+/* Home page hero */
+.wimi-hero {
+  text-align: center;
+  margin: 1rem 0 2rem;
+}
+.wimi-hero img {
+  width: 96px;
+}
+.wimi-hero h1 {
+  margin: 0.5rem 0 0.25rem;
+  font-weight: 700;
+}
+.wimi-hero p {
+  font-size: 1.1rem;
+  max-width: 42rem;
+  margin: 0.5rem auto 1.25rem;
+}
+.wimi-hero .md-button {
+  margin: 0.25rem;
+}
+
+/* Origin labels used in prose, matching the report legend */
+.origin {
+  display: inline-block;
+  padding: 0 0.5em;
+  border-radius: 999px;
+  font-size: 0.85em;
+  color: #fff;
+}
+.origin.base { background: #2a78d6; }
+.origin.app { background: #eb6834; }

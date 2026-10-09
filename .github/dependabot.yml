@@ -16,3 +16,13 @@ updates:
       interval: weekly
     commit-message:
       prefix: deps
+  # Documentation site build dependencies (hash-locked in docs/requirements.txt)
+  - package-ecosystem: pip
+    directory: /docs
+    schedule:
+      interval: weekly
+    groups:
+      docs:
+        patterns: ["*"]
+    commit-message:
+      prefix: docs

@@ -1,0 +1,11 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" role="img" aria-label="What's In My Image logo">
+  <!-- An image as stacked layers, base at the bottom, with a magnifier tracing what is inside. -->
+  <path d="M6 40v6l26 10 26-10v-6l-26 10z" fill="#1f5fae"/>
+  <path d="M32 30 6 40l26 10 26-10z" fill="#2a78d6"/>
+  <path d="M6 28v6l26 10 26-10v-6l-26 10z" fill="#13875e"/>
+  <path d="M32 18 6 28l26 10 26-10z" fill="#1baf7a"/>
+  <path d="M6 16v6l26 10 26-10v-6l-26 10z" fill="#c4521f"/>
+  <path d="M32 6 6 16l26 10 26-10z" fill="#eb6834"/>
+  <circle cx="48" cy="46" r="8" fill="#0f1b2d" fill-opacity=".35" stroke="#fab219" stroke-width="4"/>
+  <path d="m54 52 6 6" stroke="#fab219" stroke-width="5" stroke-linecap="round"/>
+</svg>
