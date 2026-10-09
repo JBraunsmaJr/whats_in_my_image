@@ -38,14 +38,14 @@ component, so every CVE is credited to the party that introduced it, and that ca
 * **Severity**, with critical and high findings summarised in the bottom line.
 * **Vendor fix status**, read from the scanner (Trivy `Status`, Grype `fix.state`):
 
-| Fix status | Meaning |
-| --- | --- |
-| Fix available | Updating the package removes the finding. |
-| No fix released yet | The vendor has not shipped a fix. |
-| Fix deferred | The vendor plans to fix it later. |
-| Will not fix | The vendor will not fix it in this release. |
-| No longer supported | The package or release is end of life. |
-| Under investigation | The vendor has not decided yet. |
+| Fix status          | Meaning                                     |
+|---------------------|---------------------------------------------|
+| Fix available       | Updating the package removes the finding.   |
+| No fix released yet | The vendor has not shipped a fix.           |
+| Fix deferred        | The vendor plans to fix it later.           |
+| Will not fix        | The vendor will not fix it in this release. |
+| No longer supported | The package or release is end of life.      |
+| Under investigation | The vendor has not decided yet.             |
 
 "Will not fix", "end of life" and "deferred" findings are raised as their own findings, and the bottom line states
 how many vulnerabilities will never be removed by updating and need a risk decision.

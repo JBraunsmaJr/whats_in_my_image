@@ -45,10 +45,10 @@ locked-down hosts.
 
 ## Optional extras
 
-| Extra | When you need it |
-| --- | --- |
+| Extra                                            | When you need it                                                                                |
+|--------------------------------------------------|-------------------------------------------------------------------------------------------------|
 | `zstd` (`pip install "whats-in-my-image[zstd]"`) | Images with zstd-compressed layers, on Python older than 3.14. Python 3.14 reads zstd natively. |
-| Trivy or Grype on `PATH` | To run a vulnerability scan with `--scan`. Not needed if you import an existing report. |
+| Trivy or Grype on `PATH`                         | To run a vulnerability scan with `--scan`. Not needed if you import an existing report.         |
 
 ## Next steps
 

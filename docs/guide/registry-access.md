@@ -23,11 +23,11 @@ echo "$TOKEN" | wimi registry.example.mil/team/app:1.2 --username svc-scanner --
 
 ## TLS and internal certificate authorities
 
-| Option | Use |
-| --- | --- |
+| Option                 | Use                                                               |
+|------------------------|-------------------------------------------------------------------|
 | `--ca-cert bundle.pem` | Registries using an internal CA (for example DoD PKI). Preferred. |
-| `--insecure` | Skip TLS verification. Lab registries only. |
-| `--plain-http` | Use `http://` instead of `https://`. |
+| `--insecure`           | Skip TLS verification. Lab registries only.                       |
+| `--plain-http`         | Use `http://` instead of `https://`.                              |
 
 ## Multi-arch images
 

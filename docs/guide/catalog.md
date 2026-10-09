@@ -17,12 +17,12 @@ wimi registry.example.mil/team/api:2.4     # no --base needed
 
 ## Commands
 
-| Command | What it does |
-| --- | --- |
-| `wimi catalog add [NAME=]IMAGE ...` | Add one or more images (registry reference, archive or OCI layout). |
-| `wimi catalog crawl REPOSITORY` | Add many tags of one repository. `--limit N` keeps the newest N (default 25, `0` for all), `--match REGEX` filters tags, `--name` sets the label. |
-| `wimi catalog list` | Show the catalogued images. |
-| `wimi catalog remove PATTERN` | Remove entries whose reference matches exactly or by regular expression. |
+| Command                             | What it does                                                                                                                                      |
+|-------------------------------------|---------------------------------------------------------------------------------------------------------------------------------------------------|
+| `wimi catalog add [NAME=]IMAGE ...` | Add one or more images (registry reference, archive or OCI layout).                                                                               |
+| `wimi catalog crawl REPOSITORY`     | Add many tags of one repository. `--limit N` keeps the newest N (default 25, `0` for all), `--match REGEX` filters tags, `--name` sets the label. |
+| `wimi catalog list`                 | Show the catalogued images.                                                                                                                       |
+| `wimi catalog remove PATTERN`       | Remove entries whose reference matches exactly or by regular expression.                                                                          |
 
 All catalog commands accept `--catalog FILE` and the same [registry access](registry-access.md) options as a scan.
 

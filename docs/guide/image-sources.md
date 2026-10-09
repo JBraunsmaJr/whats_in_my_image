@@ -2,14 +2,14 @@
 
 `wimi` reads an image from wherever it lives. Docker is not required unless you read from the local Docker engine.
 
-| Source | Example | Notes |
-| --- | --- | --- |
-| Any OCI registry | `wimi registry.example.mil/team/app:1.2` | Tags or digests (`@sha256:...`). See [Registry access](registry-access.md). |
-| `docker save` / `podman save` archive | `wimi app.tar` or `wimi docker-archive:app.tar` | Any existing file path is treated as an archive. |
-| OCI archive | `wimi oci-archive:app.tar` | |
-| OCI image layout directory | `wimi oci:./layout-dir` | Any existing directory is treated as an OCI layout. |
-| Local Docker engine | `wimi docker:myapp:latest` | Exported with `docker save`. |
-| Local Podman engine | `wimi podman:myapp:latest` | Exported with `podman save`. |
+| Source                                | Example                                         | Notes                                                                       |
+|---------------------------------------|-------------------------------------------------|-----------------------------------------------------------------------------|
+| Any OCI registry                      | `wimi registry.example.mil/team/app:1.2`        | Tags or digests (`@sha256:...`). See [Registry access](registry-access.md). |
+| `docker save` / `podman save` archive | `wimi app.tar` or `wimi docker-archive:app.tar` | Any existing file path is treated as an archive.                            |
+| OCI archive                           | `wimi oci-archive:app.tar`                      |                                                                             |
+| OCI image layout directory            | `wimi oci:./layout-dir`                         | Any existing directory is treated as an OCI layout.                         |
+| Local Docker engine                   | `wimi docker:myapp:latest`                      | Exported with `docker save`.                                                |
+| Local Podman engine                   | `wimi podman:myapp:latest`                      | Exported with `podman save`.                                                |
 
 Base images given with `--base` (and `wimi catalog add`) accept the same forms, so you can compare an exported
 application image with an exported base:

@@ -28,11 +28,11 @@ wimi registry.example.mil/team/api:2.4 \
 An image was built on a base **only if its first layers are byte-for-byte identical** (same SHA-256 digests) to that
 base's layers. There is no fuzzy matching, so the result is proof rather than opinion.
 
-| Result | What the report says |
-| --- | --- |
-| All of the base's layers match | Those layers are credited to the base: *exact layer-digest match*. |
+| Result                          | What the report says                                                                                                                                     |
+|---------------------------------|----------------------------------------------------------------------------------------------------------------------------------------------------------|
+| All of the base's layers match  | Those layers are credited to the base: *exact layer-digest match*.                                                                                       |
 | Only the first few layers match | The image was built from a different tag of that base that shares older layers. Only the shared layers are credited to it: *partial layer-digest match*. |
-| No layers match | "The image was **NOT** built on ..." The base you named is wrong, or a different version. |
+| No layers match                 | "The image was **NOT** built on ..." The base you named is wrong, or a different version.                                                                |
 
 !!! warning "Base upgrades are credited to the application"
     If the application build upgrades a base package (for example `dnf update openssl`), that version is credited to

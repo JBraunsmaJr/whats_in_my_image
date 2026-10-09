@@ -59,6 +59,9 @@
             "context": "Build distribution"
           },
           {
+            "context": "Scanner sidecar (container engine)"
+          },
+          {
             "context": "CodeQL (SAST) (python)"
           },
           {
