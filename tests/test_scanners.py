@@ -233,6 +233,7 @@ class SidecarRuns(SidecarTestCase):
         self.assertEqual(env["TRIVY_CACHE_DIR"], "/vulndb/trivy")
         self.assertEqual(env["TRIVY_SKIP_DB_UPDATE"], "true")
         self.assertEqual(env["TRIVY_CACHE_BACKEND"], "memory")  # sidecar default
+        self.assertEqual(env["TMPDIR"], "/wimi-scan")  # writable by any user, unlike some images' /tmp
         self.assertEqual(env["HTTPS_PROXY"], "http://proxy:3128")  # named in WIMI_SCANNER_ENV
         self.assertNotIn("WIMI_PASSWORD", env)
         self.assertNotIn("DOCKER_HOST", env)
