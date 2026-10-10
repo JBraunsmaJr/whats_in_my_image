@@ -23,7 +23,7 @@ group. Reports, the catalog, archives and databases go to `testbed/.state/`, whi
 | Demo apps      | `rpm-python-app`: an older UBI 9 Python base, an added RPM, old pip packages with CVEs, an unowned binary, `curl \| sh` and `chmod 777`. `alpine-node-app`: Node Alpine with an added apk and old npm packages with CVEs. Both are pushed to the local registry. |
 | Catalog        | The newest 15 releases of UBI 9 minimal and of UBI 9 Python 3.12 minimal, plus Node 22 Alpine and Alpine 3.22, so base chains and outdated bases are identified.                                                                                                 |
 | Scanners       | Trivy and Grype at pinned versions, checksum verified, in `~/.local/bin`.                                                                                                                                                                                        |
-| Databases      | Trivy and Grype databases in `testbed/.state/vulndb`, and copied into the `wimi-testbed-vulndb` volume for offline [scanner sidecar](../guide/scanner-containers.md) tests.                                                                                      |
+| Databases      | Trivy and Grype databases in `testbed/.state/vulndb`, and copied into the `wimi-testbed-vulndb` volume for offline scanner sidecar tests.                                                                                                                        |
 
 ## Scan targets
 
