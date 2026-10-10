@@ -107,7 +107,8 @@ ruff check . && ruff format --check .     # lint and formatting
 ```
 
 See the [developer guide](https://willj4945.github.io/whats_in_my_image/developer/) for the project layout, the
-documentation site and the release process. To report a security problem, see [SECURITY.md](SECURITY.md).
+documentation site and the release process, and the [roadmap](ROADMAP.md) for what's planned and where help is
+welcome. To report a security problem, see [SECURITY.md](SECURITY.md).
 
 ## License
 
