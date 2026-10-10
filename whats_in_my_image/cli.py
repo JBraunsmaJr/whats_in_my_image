@@ -98,7 +98,7 @@ def _parser() -> argparse.ArgumentParser:
     )
     g = p.add_argument_group("output")
     g.add_argument("-o", "--output-dir", type=Path, default=Path("wimi-reports"))
-    g.add_argument("--formats", choices=["html", "json", "csv"], nargs="+", default=["html", "json", "csv"],
+    g.add_argument("--formats", choices=["html", "json", "csv"], nargs="*", default=["html", "json", "csv"],
                    help="comma list of html,json,csv (default: %(default)s)")
     g.add_argument(
         "--subtitle",
