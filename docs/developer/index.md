@@ -32,6 +32,8 @@ Gitleaks, workflow security checks and OpenSSF Scorecard. Findings appear under 
 
 To try changes against real images, set up the [local testbed](testbed.md).
 
+For where the project is heading and what to pick up next, see the [roadmap](roadmap.md).
+
 ## Working on the documentation
 
 The site is built with [Material for MkDocs](https://squidfunk.github.io/mkdocs-material/). The pinned, hash-locked
