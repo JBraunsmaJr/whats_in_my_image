@@ -99,7 +99,7 @@ def _parser() -> argparse.ArgumentParser:
         const="auto",
         choices=["auto", "trivy", "grype"],
         help="run Trivy or Grype and attribute every finding: the installed binary if there is one, otherwise the "
-        "scanner's container image if a container engine is reachable (see 'scanners' below)",
+             "scanner's container image if a container engine is reachable (see 'scanners' below)",
     )
     g.add_argument(
         "--vuln-report",
