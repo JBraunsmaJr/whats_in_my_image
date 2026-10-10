@@ -1,0 +1,71 @@
+#!/usr/bin/env bash
+# Run wimi from its container image as if it were installed locally.
+#
+#   wimi-docker registry.example.mil/team/app:1.2 --scan
+#
+# is the same as running an installed `wimi` in the current directory: reports go to ./wimi-reports/, relative paths
+# (archives, --vuln-report files, --catalog) work, the files written are owned by you, and your `docker login`
+# credentials, base image catalog and layer cache are used. If the container engine socket is available, it is shared
+# so `--scan` can run Trivy or Grype as sidecar containers.
+#
+# Settings (all optional):
+#   WIMI_IMAGE         the wimi image to run (default: ghcr.io/willj4945/whats_in_my_image:latest)
+#   WIMI_DOCKER_SOCKET 0 to never share the container engine socket (then --scan needs the scanners installed)
+#   WIMI_*, TRIVY_*, GRYPE_* variables set in your shell are passed through, e.g. WIMI_SCANNER_PULL=true.
+#
+# Install: copy this file to a directory on your PATH (for example ~/.local/bin/wimi-docker) and make it executable.
+set -euo pipefail
+
+image="${WIMI_IMAGE:-ghcr.io/willj4945/whats_in_my_image:latest}"
+docker="${WIMI_DOCKER:-docker}"
+
+# Run as you, so the reports (and catalog and cache) are owned by you rather than the image's user.
+args=(run --rm -i -u "$(id -u):$(id -g)")
+
+# The current directory at the same path, so relative and absolute paths under it mean the same inside and out.
+args+=(-v "$PWD:$PWD" -w "$PWD")
+
+# Your docker login credentials, read-only. (Credential helpers such as Docker Desktop's are not available inside
+# the container; use WIMI_USERNAME / WIMI_PASSWORD for those registries.)
+docker_config="${DOCKER_CONFIG:-$HOME/.docker}"
+if [ -f "$docker_config/config.json" ]; then
+  args+=(-v "$docker_config/config.json:/wimi-docker-config/config.json:ro" -e DOCKER_CONFIG=/wimi-docker-config)
+fi
+
+# Your base image catalog and layer cache, shared with an installed wimi.
+config_home="${XDG_CONFIG_HOME:-$HOME/.config}"
+mkdir -p "$config_home/whats-in-my-image" "$HOME/.cache/whats-in-my-image"
+args+=(-v "$config_home/whats-in-my-image:/wimi-config/whats-in-my-image" -e XDG_CONFIG_HOME=/wimi-config)
+args+=(-v "$HOME/.cache/whats-in-my-image:/wimi-cache" -e WIMI_CACHE=/wimi-cache)
+# Scanner databases kept in that cache too, so a sidecar scan doesn't download them again every run (and the report
+# can say how old they are). The sidecar runs as you so it can update them.
+if [ -z "${TRIVY_CACHE_DIR:-}${GRYPE_DB_CACHE_DIR:-}${WIMI_VULNDB_MOUNT:-}" ]; then
+  args+=(-e TRIVY_CACHE_DIR=/wimi-cache/trivy -e GRYPE_DB_CACHE_DIR=/wimi-cache/grype)
+  args+=(-e "WIMI_SCANNER_USER=${WIMI_SCANNER_USER:-$(id -u):$(id -g)}")
+fi
+if [ -n "${WIMI_CATALOG:-}" ]; then
+  catalog="$(cd "$(dirname "$WIMI_CATALOG")" && pwd)/$(basename "$WIMI_CATALOG")"
+  args+=(-v "$(dirname "$catalog"):$(dirname "$catalog")" -e "WIMI_CATALOG=$catalog")
+fi
+
+# The container engine socket, for scanner sidecars, only if you can already use it yourself. Access to it is
+# equivalent to root on the host.
+socket=""
+case "${DOCKER_HOST:-}" in
+  unix://*) socket="${DOCKER_HOST#unix://}" ;;
+  "") socket="/var/run/docker.sock" ;;
+esac
+if [ "${WIMI_DOCKER_SOCKET:-1}" != "0" ] && [ -n "$socket" ] && [ -S "$socket" ] && [ -w "$socket" ]; then
+  gid="$(stat -c %g "$socket" 2>/dev/null || stat -f %g "$socket")"
+  args+=(-v "$socket:/var/run/docker.sock" --group-add "$gid")
+fi
+
+# Pass through wimi's and the scanners' own settings.
+while IFS='=' read -r name _; do
+  case "$name" in
+    WIMI_IMAGE | WIMI_DOCKER | WIMI_DOCKER_SOCKET | WIMI_CATALOG | WIMI_SCANNER_USER) ;;
+    WIMI_* | TRIVY_* | GRYPE_*) args+=(-e "$name") ;;
+  esac
+done < <(env)
+
+exec "$docker" "${args[@]}" "$image" "$@"
