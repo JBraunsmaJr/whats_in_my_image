@@ -67,7 +67,7 @@ def _parser() -> argparse.ArgumentParser:
         formatter_class=argparse.RawDescriptionHelpFormatter,
         epilog=EPILOG,
         description="What's In My Image: trace every package, library and program in a container image back to "
-                    "the base image or build step that put it there, and produce an executive-ready report.",
+        "the base image or build step that put it there, and produce an executive-ready report.",
     )
     p.add_argument("image", help="image to analyse (see image sources below)")
     p.add_argument(
@@ -99,7 +99,7 @@ def _parser() -> argparse.ArgumentParser:
         const="auto",
         choices=["auto", "trivy", "grype"],
         help="run Trivy or Grype and attribute every finding: the installed binary if there is one, otherwise the "
-             "scanner's container image if a container engine is reachable (see 'scanners' below)",
+        "scanner's container image if a container engine is reachable (see 'scanners' below)",
     )
     g.add_argument(
         "--vuln-report",
@@ -116,8 +116,13 @@ def _parser() -> argparse.ArgumentParser:
     )
     g = p.add_argument_group("output")
     g.add_argument("-o", "--output-dir", type=Path, default=Path("wimi-reports"))
-    g.add_argument("--formats", choices=["html", "json", "csv"], nargs="*", default=["html", "json", "csv"],
-                   help="comma list of html,json,csv (default: %(default)s)")
+    g.add_argument(
+        "--formats",
+        choices=["html", "json", "csv"],
+        nargs="*",
+        default=["html", "json", "csv"],
+        help="comma list of html,json,csv (default: %(default)s)",
+    )
     g.add_argument(
         "--subtitle",
         default="Container image provenance report",
@@ -317,8 +322,8 @@ def catalog_main(argv: list[str]) -> int:
     p = argparse.ArgumentParser(
         prog="wimi catalog",
         description="Manage the catalog of known base images. Once a base is catalogued, `wimi` recognises it in "
-                    "any image by exact layer digests, without --base. The catalog stores only layer digests, so it "
-                    "is small and safe to share across a team.",
+        "any image by exact layer digests, without --base. The catalog stores only layer digests, so it "
+        "is small and safe to share across a team.",
     )
     sub = p.add_subparsers(dest="cmd", required=True, metavar="{add,crawl,list,remove}")
     a = sub.add_parser("add", parents=[common], help="add one or more base images")
