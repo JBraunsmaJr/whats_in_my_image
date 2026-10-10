@@ -407,7 +407,9 @@ def container_spec(
     spec = {
         "Image": image["Id"],
         "Cmd": scanner_args(tool.key, f"{SCAN_DIR}/image.tar", f"{SCAN_DIR}/result.json"),
-        "Env": [f"{k}={v}" for k, v in sorted(env.items())],
+        # Scanners write temporary files (Grype unpacks the image there); the image's /tmp may be writable only by
+        # root, so point them at the scan directory, which any user can write (see tar_stream).
+        "Env": [f"{k}={v}" for k, v in sorted({"TMPDIR": SCAN_DIR, **env}.items())],
         "Labels": {"wimi.scan": "1", "wimi.tool": tool.key, "wimi.expires": str(expires)},
         "HostConfig": host,
     }
