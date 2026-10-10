@@ -30,6 +30,8 @@ GitHub Actions runs these on every push and pull request, along with tests on Py
 Gitleaks, workflow security checks and OpenSSF Scorecard. Findings appear under the repository's
 **Security → Code scanning** tab.
 
+To try changes against real images, set up the [local testbed](testbed.md).
+
 ## Working on the documentation
 
 The site is built with [Material for MkDocs](https://squidfunk.github.io/mkdocs-material/). The pinned, hash-locked

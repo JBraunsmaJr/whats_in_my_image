@@ -24,6 +24,9 @@ All notable changes to this project are documented here. The format follows
 - The report records how the scan ran (binary or container image and digest), the scanner version, and the date its
   vulnerability data was built, and warns in the bottom line when that data is more than 30 days old.
 - CI job that runs a real Trivy sidecar against a mirrored image and a database volume.
+- Local Docker testbed for development (`testbed/testbed.sh`): a local registry, images covering every supported
+  ecosystem, demo application images that trigger findings, a base image catalog, and pinned scanners with their
+  databases. `testbed/testbed.sh scan` runs the current checkout against every target.
 
 ### Changed
 
