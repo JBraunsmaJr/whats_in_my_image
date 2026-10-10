@@ -42,6 +42,11 @@ All notable changes to this project are documented here. The format follows
   contain exactly that wheel.
 - The "Scanner sidecar (container engine)" CI job is a required check on `main`.
 
+### Fixed
+
+- Grype scanner sidecars no longer fail when run as a non-root user (`WIMI_SCANNER_USER`): sidecars now write
+  temporary files to the scan directory, which any user can write, instead of the image's `/tmp`.
+
 ## [0.2.0] - 2026-10-02
 
 Identifies base images automatically, explains why vulnerabilities have no fix, and adds a layer cake view.
