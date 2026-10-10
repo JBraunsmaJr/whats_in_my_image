@@ -113,6 +113,7 @@ nav:
       - Naming the base image: guide/base-images.md
       - Base image catalog: guide/catalog.md
       - Vulnerabilities: guide/vulnerabilities.md
+      - Scanner containers: guide/scanner-containers.md
       - Registry access: guide/registry-access.md
   - Reports:
       - reports/index.md
@@ -133,6 +134,7 @@ nav:
       - Environment variables: reference/environment.md
   - Developer guide:
       - developer/index.md
+      - Local testbed: developer/testbed.md
       - Branch protection: developer/branch-protection.md
       - Cutting a release: developer/releasing.md
       - Security: developer/security.md

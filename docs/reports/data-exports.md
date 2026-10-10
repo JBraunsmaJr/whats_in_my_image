@@ -4,17 +4,18 @@
 
 `provenance-<image>.json` holds everything the HTML report is built from. The main top-level fields are:
 
-| Field               | Contents                                                                                                  |
-|---------------------|-----------------------------------------------------------------------------------------------------------|
-| `image`             | Reference, digests, platform, size, OS, labels and creation time of the image.                            |
-| `origins`           | Each origin (base images and the application build), with its layers and the evidence for it.             |
-| `layers`            | Every layer with its origin, size, build command and what it added.                                       |
-| `components`        | Every traced component: name, version, type, supplier, layer, evidence, concerns, licence and purl.       |
-| `vulns`             | Every finding with severity, fix status and attribution, or `null` if no vulnerability data was supplied. |
-| `findings`          | The findings that need attention, each with its severity and the origin responsible for it.               |
-| `notes`             | Plain-English notes about the attribution, such as partial base matches or an outdated base.              |
-| `removed_packages`  | Packages that an earlier layer installed and a later layer removed.                                       |
-| `tool`, `generated` | The `wimi` version that wrote the report, and when.                                                       |
+| Field               | Contents                                                                                                                                                                                                                              |
+|---------------------|---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| `image`             | Reference, digests, platform, size, OS, labels and creation time of the image.                                                                                                                                                        |
+| `origins`           | Each origin (base images and the application build), with its layers and the evidence for it.                                                                                                                                         |
+| `layers`            | Every layer with its origin, size, build command and what it added.                                                                                                                                                                   |
+| `components`        | Every traced component: name, version, type, supplier, layer, evidence, concerns, licence and purl.                                                                                                                                   |
+| `vulns`             | Every finding with severity, fix status and attribution, or `null` if no vulnerability data was supplied.                                                                                                                             |
+| `vuln_scan`         | When `wimi` ran the scanner: the tool and version, `mode` (`binary` or `container`), the container image and digest, and the vulnerability data's build date (`db_date`) and age in days (`db_age_days`). Empty for imported reports. |
+| `findings`          | The findings that need attention, each with its severity and the origin responsible for it.                                                                                                                                           |
+| `notes`             | Plain-English notes about the attribution, such as partial base matches or an outdated base.                                                                                                                                          |
+| `removed_packages`  | Packages that an earlier layer installed and a later layer removed.                                                                                                                                                                   |
+| `tool`, `generated` | The `wimi` version that wrote the report, and when.                                                                                                                                                                                   |
 
 !!! note
     The JSON layout follows the report and may gain fields between releases. Read fields by name, and ignore ones

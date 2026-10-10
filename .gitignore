@@ -9,3 +9,5 @@ site/
 .idea
 .vscode
 out
+testbed/.state/
+.venv/

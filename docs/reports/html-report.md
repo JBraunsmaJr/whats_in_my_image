@@ -17,6 +17,8 @@ ticket, opened offline or printed to PDF. It follows the system light or dark th
 4. **Findings that need attention.** Each finding grouped by owner, so it can be routed to the right team. Examples:
    outdated base image, vulnerabilities the vendor will not fix, programs no package manager installed.
 5. **Vulnerabilities.** Each CVE with severity, vendor fix status, and the party that introduced it. Filterable.
+   The section states where the data came from: the scanner and version, how it ran, and how old its vulnerability
+   data is.
 6. **Full inventory.** Every component with its supplier and the evidence behind that attribution. Searchable.
 7. **Method and glossary.** How the conclusions were reached, written for non-specialists.
 

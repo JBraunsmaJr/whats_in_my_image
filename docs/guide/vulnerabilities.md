@@ -8,9 +8,12 @@ component, so every CVE is credited to the party that introduced it, and that ca
 === "Run a scanner"
 
     ```bash
-    wimi IMAGE --scan            # Trivy or Grype, whichever is installed
+    wimi IMAGE --scan            # Trivy or Grype: the installed binary, or its container image
     wimi IMAGE --scan trivy      # or choose one
     ```
+
+    No scanner installed? If a container engine is reachable and the scanner's image is present, `wimi` runs it as a
+    sidecar container. See [Scanner containers](scanner-containers.md).
 
 === "Import a report"
 
@@ -32,6 +35,8 @@ component, so every CVE is credited to the party that introduced it, and that ca
 
 ## What you get
 
+* **Where the data came from:** the scanner and version, whether it ran as a binary or from which container image,
+  and the date its vulnerability data was built. Data more than 30 days old is called out in the bottom line.
 * **Who introduced it:** the base image or the application build. Each finding is matched to the traced component it
   affects. If no component matches, the layer reported by the scanner is used instead, and if there is none the
   finding is shown as *Unattributed* rather than guessed. The report states which method was used for every finding.

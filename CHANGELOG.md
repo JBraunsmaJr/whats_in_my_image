@@ -24,6 +24,11 @@ All notable changes to this project are documented here. The format follows
 - The report records how the scan ran (binary or container image and digest), the scanner version, and the date its
   vulnerability data was built, and warns in the bottom line when that data is more than 30 days old.
 - CI job that runs a real Trivy sidecar against a mirrored image and a database volume.
+- `contrib/wimi-docker`: runs the `wimi` container image like an installed command. It runs as your user in the
+  current directory, shares your `docker login` credentials, catalog and caches (including scanner databases), shares
+  the container engine socket for scanner sidecars when you can use it, and passes through `WIMI_*`, `TRIVY_*` and
+  `GRYPE_*` settings.
+- Documentation for scanner containers, the `wimi-docker` wrapper, and building the image yourself.
 
 ### Changed
 
@@ -36,6 +41,11 @@ All notable changes to this project are documented here. The format follows
   workflow passes its signed wheel in with `--build-arg WHEEL=dist --build-context dist=dist/`, so released images
   contain exactly that wheel.
 - The "Scanner sidecar (container engine)" CI job is a required check on `main`.
+
+### Fixed
+
+- Grype scanner sidecars no longer fail when run as a non-root user (`WIMI_SCANNER_USER`): sidecars now write
+  temporary files to the scan directory, which any user can write, instead of the image's `/tmp`.
 
 ## [0.2.0] - 2026-10-02
 
