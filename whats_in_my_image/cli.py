@@ -317,8 +317,8 @@ def catalog_main(argv: list[str]) -> int:
     p = argparse.ArgumentParser(
         prog="wimi catalog",
         description="Manage the catalog of known base images. Once a base is catalogued, `wimi` recognises it in "
-                    "any image by exact layer digests, without --base. The catalog stores only layer digests, so it is small "
-                    "and safe to share across a team.",
+                    "any image by exact layer digests, without --base. The catalog stores only layer digests, so it "
+                    "is small and safe to share across a team.",
     )
     sub = p.add_subparsers(dest="cmd", required=True, metavar="{add,crawl,list,remove}")
     a = sub.add_parser("add", parents=[common], help="add one or more base images")
