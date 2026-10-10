@@ -14,9 +14,9 @@ Supplier information comes from the image
 :   Supplier details are read from the image's own package metadata. A package signature tells you which key signed
     it; checking that key against your trust policy happens outside this tool.
 
-Ecosystems not yet itemised
-:   Rust, .NET and Ruby dependencies are not yet itemised. Their binaries still appear as program files.
+Ecosystems not yet itemized
+:   Rust, .NET and Ruby dependencies are not yet itemized. Their binaries still appear as program files.
 
 Estimated base boundary
-:   With no `--base`, annotation or catalog match, the base boundary is estimated from build times and labelled as an
+:   With no `--base`, annotation or catalog match, the base boundary is estimated from build times and labeled as an
     estimate. See [Naming the base image](../guide/base-images.md#when-no-base-is-known).

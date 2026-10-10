@@ -11,7 +11,8 @@
 The Release workflow then:
 
 1. builds and tests the Python package, and checks the tag matches the package version,
-2. builds the container image from that exact wheel and blocks on fixable critical CVEs,
+2. builds the container image from that exact wheel (`--build-arg WHEEL=dist --build-context dist=dist/`) and blocks
+   on fixable critical CVEs,
 3. pushes the image to GHCR and signs it with cosign (keyless, Sigstore),
 4. generates CycloneDX SBOMs and signed SLSA build provenance for the wheel, sdist and image,
 5. runs `wimi` on its own image and attaches the provenance report,

@@ -1,4 +1,10 @@
 *
-!dist/*.whl
+!pyproject.toml
+!requirements-build.txt
+!README.md
 !LICENSE
 !NOTICE
+!whats_in_my_image/
+dist/
+**/__pycache__
+**/*.pyc

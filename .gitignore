@@ -6,3 +6,8 @@ build/
 dist/
 site/
 .venv-docs/
+.idea
+.vscode
+out
+testbed/.state/
+.venv/

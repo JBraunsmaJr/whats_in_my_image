@@ -29,6 +29,7 @@ the build step that added it. This section takes you from nothing to your first 
 
 * Python 3.9 or newer (or any container runtime, to use the published image).
 * Network access to the registry that holds your image, or an exported image archive.
-* Optional: [Trivy](https://trivy.dev) or [Grype](https://github.com/anchore/grype) to attribute vulnerabilities.
+* Optional: [Trivy](https://trivy.dev) or [Grype](https://github.com/anchore/grype) to attribute vulnerabilities,
+  installed or as a [container image](../guide/scanner-containers.md).
 
 Docker is **not** required. `wimi` talks to registries directly and reads archives and OCI layouts from disk.

@@ -28,6 +28,12 @@ How to point `wimi` at an image, tell it what the base image is, add vulnerabili
 
     Attribute Trivy, Grype or Harbor findings to the party that introduced them.
 
+-   :material-docker:{ .lg .middle } **[Scanner containers](scanner-containers.md)**
+
+    ---
+
+    Run Trivy or Grype from their container images, with offline databases for air-gapped networks.
+
 -   :material-key-chain:{ .lg .middle } **[Registry access](registry-access.md)**
 
     ---

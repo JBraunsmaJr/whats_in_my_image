@@ -9,11 +9,43 @@ All notable changes to this project are documented here. The format follows
 
 - Documentation site at https://willj4945.github.io/whats_in_my_image/, built with Material for MkDocs and published
   to GitHub Pages from `main`. The command line reference is generated from `wimi --help`.
+- `--scan` runs Trivy or Grype from their container images when the binaries are not installed: if a container
+  engine socket is reachable and the scanner image is present locally, the scanner runs as a sidecar container with
+  no capabilities and `no-new-privileges`, and is removed afterwards. An installed binary is still used
+  first, and a scanner with neither is skipped. The `wimi` image itself still contains no scanners.
+- `WIMI_TRIVY_IMAGE` / `WIMI_GRYPE_IMAGE` name mirrored or retagged scanner images (exact tag, digest, or a repository
+  whose newest local tag is used). Missing images are never pulled unless `WIMI_SCANNER_PULL=true`.
+- `TRIVY_*` / `GRYPE_*` variables (and any named in `WIMI_SCANNER_ENV`) are passed to the sidecar, and the volume
+  holding a path they name (for example the vulnerability database in `TRIVY_CACHE_DIR`) is mounted at the same path,
+  so air-gapped database settings work the same for binaries and sidecars. Shared paths are read-only except the
+  scanner's database directory (`TRIVY_CACHE_DIR` / `GRYPE_DB_CACHE_DIR`). `WIMI_VULNDB_MOUNT` overrides detection.
+- `WIMI_SCANNER_MODE` (`auto`, `binary`, `container`, `off`), `WIMI_SCANNER_TIMEOUT`, `WIMI_SCANNER_MEMORY`,
+  `WIMI_SCANNER_USER`. Sidecars run on the engine's default network.
+- The report records how the scan ran (binary or container image and digest), the scanner version, and the date its
+  vulnerability data was built, and warns in the bottom line when that data is more than 30 days old.
+- CI job that runs a real Trivy sidecar against a mirrored image and a database volume.
+- `contrib/wimi-docker`: runs the `wimi` container image like an installed command. It runs as your user in the
+  current directory, shares your `docker login` credentials, catalog and caches (including scanner databases), shares
+  the container engine socket for scanner sidecars when you can use it, and passes through `WIMI_*`, `TRIVY_*` and
+  `GRYPE_*` settings.
+- Documentation for scanner containers, the `wimi-docker` wrapper, and building the image yourself.
 
 ### Changed
 
 - README is now a short landing page that links into the documentation site.
 - The sample report moved from `docs/index.html` to `docs/sample-report.html`.
+- `docker build .` now works from a clean checkout: the Dockerfile builds the wheel from source in a first stage, so
+  no local `python -m build` is needed, and a leftover wheel in `dist/` can never end up in the image. The build
+  backend is pinned by version and hash in `requirements-build.txt`. Build arguments `PIP_INDEX_URL` (and
+  `PIP_EXTRA_INDEX_URL`, `PIP_TRUSTED_HOST`) point the build at a PyPI mirror on disconnected networks. The release
+  workflow passes its signed wheel in with `--build-arg WHEEL=dist --build-context dist=dist/`, so released images
+  contain exactly that wheel.
+- The "Scanner sidecar (container engine)" CI job is a required check on `main`.
+
+### Fixed
+
+- Grype scanner sidecars no longer fail when run as a non-root user (`WIMI_SCANNER_USER`): sidecars now write
+  temporary files to the scan directory, which any user can write, instead of the image's `/tmp`.
 
 ## [0.2.0] - 2026-10-02
 
