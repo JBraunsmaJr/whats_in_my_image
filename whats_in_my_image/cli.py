@@ -121,7 +121,7 @@ def _parser() -> argparse.ArgumentParser:
         choices=["html", "json", "csv"],
         nargs="*",
         default=["html", "json", "csv"],
-        help="comma list of html,json,csv (default: %(default)s)",
+        help="Output report in one or more supported formats (default: %(default)s)",
     )
     g.add_argument(
         "--subtitle",
