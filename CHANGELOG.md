@@ -11,6 +11,13 @@ All notable changes to this project are documented here. The format follows
   tag, and opens an issue listing the fixable critical and high vulnerabilities a newer build would remove.
 - The release guide says when to cut a patch release.
 
+### Changed
+
+- `SECURITY.md` links straight to private vulnerability reporting, and sets out a disclosure timeline and what is in
+  and out of scope.
+- The tools CI installs (Ruff, build, Bandit, zizmor) are hash-locked in `.github/requirements/` and kept current by
+  Dependabot, so every tool a workflow downloads is verified by checksum.
+
 ## [0.3.0] - 2026-10-10
 
 Runs Trivy and Grype as sidecar containers, fixes attribution for layers that only change permissions, adds a
