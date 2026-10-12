@@ -5,6 +5,12 @@ All notable changes to this project are documented here. The format follows
 
 ## [Unreleased]
 
+### Added
+
+- A weekly **Base image check** workflow compares the `Dockerfile`'s pinned base image with the registry's `latest`
+  tag, and opens an issue listing the fixable critical and high vulnerabilities a newer build would remove.
+- The release guide says when to cut a patch release.
+
 ## [0.3.0] - 2026-10-10
 
 Runs Trivy and Grype as sidecar containers, fixes attribution for layers that only change permissions, adds a
