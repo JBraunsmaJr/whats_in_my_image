@@ -58,6 +58,11 @@ jobs:
     name: Image, signatures, SBOMs, provenance, release
     needs: build
     runs-on: ubuntu-latest
+    env:
+      VERSION: ${{ github.ref_name }}
+      IMAGE: ghcr.io/${{ github.repository }}
+      BASE_IMAGE: ""
+      WHEEL: ""
     permissions:
       contents: write # create the GitHub Release
       packages: write # push the image to GHCR

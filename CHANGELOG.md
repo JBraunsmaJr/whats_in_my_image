@@ -5,6 +5,12 @@ All notable changes to this project are documented here. The format follows
 
 ## [Unreleased]
 
+### Added
+
+- A weekly **Base image check** workflow compares the `Dockerfile`'s pinned base image with the registry's `latest`
+  tag, and opens an issue listing the fixable critical and high vulnerabilities a newer build would remove.
+- The release guide says when to cut a patch release.
+
 ### Changed
 
 - `SECURITY.md` links straight to private vulnerability reporting, and sets out a disclosure timeline and what is in
