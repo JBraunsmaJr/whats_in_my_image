@@ -7,7 +7,7 @@ This is a living plan. Items link to issues where one exists. Tick items off in 
 open an issue before starting anything larger than a day's work. The order within each milestone is the suggested
 order of work.
 
-Last reviewed: 2026-10-10.
+Last reviewed: 2026-10-14.
 
 ## Principles
 
@@ -108,10 +108,44 @@ Make `wimi` a gate in CI, not only a report.
 - [ ] A maintainers list and a short governance note (how decisions are made, how to become a maintainer).
 - [ ] Release cadence written down.
 
+## Beyond Iron Bank
+
+The problem `wimi` solves isn't specific to Iron Bank. It comes up wherever one team owns a "golden" base image and
+other teams build on it: who is responsible for the vulnerabilities in this image, the base team or the app team?
+Iron Bank stays the first audience; this widens the framing and the catalog in parallel, starting after v0.4.0.
+
+**Prerequisites** (bases commercial teams use that don't work well yet)
+
+- [ ] [#15](https://github.com/willj4945/whats_in_my_image/issues/15) Distroless images: read `status.d` file lists.
+- [ ] Wolfi and Chainguard images: their apk packages are labelled "Operating-system package (Alpine)". Label them by
+      distribution.
+
+**Framing**
+
+- [ ] An honest "Compared with Syft, Dive and Trivy" page. Concede the overlap first: Syft records the layer each
+      package came from, and Trivy's JSON gives each vulnerability's layer digest. Then what `wimi` adds: who owns each
+      layer (base chain recognised by digest), program files no package manager installed, risky build steps, correct
+      handling of permission-only layers, and a report a CISO can read.
+- [ ] README and docs home page: lead with "base team versus app team". Keep Iron Bank as a featured use case with its
+      own docs page, and make the Iron Bank-specific wording in the report conditional on an Iron Bank base.
+
+**Catalog**
+
+- [ ] A catalog file kept in the repository being built (for example `.wimi/catalog.json`), found automatically, so
+      a platform team's own golden images work in CI without `--base` or `WIMI_CATALOG` on every run.
+- [ ] A public catalog, regenerated weekly by a scheduled workflow (`wimi catalog crawl`), covering Docker Official
+      Images (Debian, Ubuntu, Alpine), distroless, Chainguard and UBI. Generated, not hand-curated, because base tags
+      change too often to keep up by hand.
+
+**Test demand**
+
+- [ ] After v0.4.0, post a short write-up of the "base team versus app team" problem in platform engineering spaces
+      (r/devops, CNCF Slack, the Platform Engineering community). If people recognise the problem, this is the second
+      audience. If not, it cost an afternoon.
+
 ## Later: outreach
 
-After v0.3.0 and v0.4.0, so first impressions land on a tool that installs in one line and gives correct answers:
+After v0.4.0, so first impressions land on a tool that installs in one line and gives correct answers:
 
+- [ ] Demo to Iron Bank users through existing channels (DevSecOps CoP, CloudWave) before any broad announcement.
 - [ ] Launch post and a walkthrough using the sample report.
-- [ ] An honest comparison page: what `wimi` does that general SBOM and vulnerability scanners don't (layer-by-layer
-      attribution to the base image or the build step), and what it doesn't try to do.
