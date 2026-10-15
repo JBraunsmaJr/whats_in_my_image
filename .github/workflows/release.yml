@@ -58,9 +58,11 @@ jobs:
     name: Image, signatures, SBOMs, provenance, release
     needs: build
     runs-on: ubuntu-latest
+    # Filled in by the "Set release variables" step. Declared empty here so editors know they exist; a step that
+    # runs without them gets an empty value and fails, rather than a plausible but wrong default.
     env:
-      VERSION: ${{ github.ref_name }}
-      IMAGE: ghcr.io/${{ github.repository }}
+      VERSION: ""
+      IMAGE: ""
       BASE_IMAGE: ""
       WHEEL: ""
     permissions:
