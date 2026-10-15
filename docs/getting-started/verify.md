@@ -16,6 +16,9 @@ gh attestation verify oci://ghcr.io/willj4945/whats_in_my_image:0.3.1 --repo wil
 sha256sum --check SHA256SUMS
 ```
 
+`gh attestation` needs GitHub CLI 2.49 or newer. Some Linux distributions package an older one; check with
+`gh --version`.
+
 !!! info "Release gate"
     The release workflow refuses to publish if the image has a critical vulnerability with a fix available, or if
     the tag does not match the package version.

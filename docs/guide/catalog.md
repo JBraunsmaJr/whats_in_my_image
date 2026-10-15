@@ -24,7 +24,8 @@ wimi registry.example.mil/team/api:2.4     # no --base needed
 | `wimi catalog list`                 | Show the catalogued images.                                                                                                                       |
 | `wimi catalog remove PATTERN`       | Remove entries whose reference matches exactly or by regular expression.                                                                          |
 
-All catalog commands accept `--catalog FILE` and the same [registry access](registry-access.md) options as a scan.
+All catalog commands accept `--catalog FILE`. `add` and `crawl` also accept the same
+[registry access](registry-access.md) options as a scan.
 
 ## Where the catalog lives
 
