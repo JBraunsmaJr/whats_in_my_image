@@ -5,6 +5,18 @@ All notable changes to this project are documented here. The format follows
 
 ## [Unreleased]
 
+## [0.3.1] - 2026-10-14
+
+Rebuilds the container image on a UBI base that fixes seven high-severity vulnerabilities, including one in OpenSSL,
+and stops naming a partially matched catalog image as an image's base.
+
+### Security
+
+- The container image is built on Red Hat UBI 9 Python 3.12 minimal `9.8-1791925965` (2026-10-13). It fixes
+  CVE-2026-84782 in `openssl-libs`, and CVE-2026-86145, CVE-2026-89161 and CVE-2026-103111 in `pcre2` and
+  `pcre2-syntax`, all rated high. The v0.3.0 image has them; this one has no fixable critical or high
+  vulnerabilities. ([#28](https://github.com/willj4945/whats_in_my_image/issues/28))
+
 ### Added
 
 - A weekly **Base image check** workflow compares the `Dockerfile`'s pinned base image with the registry's `latest`
@@ -130,7 +142,8 @@ First public release.
 - Licensed under the Apache License 2.0.
 - Container image on GHCR, signed with cosign, with SLSA build provenance and CycloneDX SBOMs.
 
-[Unreleased]: https://github.com/willj4945/whats_in_my_image/compare/v0.3.0...HEAD
+[Unreleased]: https://github.com/willj4945/whats_in_my_image/compare/v0.3.1...HEAD
+[0.3.1]: https://github.com/willj4945/whats_in_my_image/compare/v0.3.0...v0.3.1
 [0.3.0]: https://github.com/willj4945/whats_in_my_image/compare/v0.2.0...v0.3.0
 [0.2.0]: https://github.com/willj4945/whats_in_my_image/compare/v0.1.0...v0.2.0
 [0.1.0]: https://github.com/willj4945/whats_in_my_image/releases/tag/v0.1.0
