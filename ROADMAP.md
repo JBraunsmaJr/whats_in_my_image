@@ -50,7 +50,7 @@ Small, mostly administrative items that make the project approachable. No releas
 
 ## v0.4.0: correct and installable
 
-Fix the attribution bugs, and make `pipx install whats-in-my-image` work.
+Fix the attribution bugs, add a pipeline gate, and make `pipx install whats-in-my-image` work.
 
 **Correctness**
 
@@ -60,6 +60,12 @@ Fix the attribution bugs, and make `pipx install whats-in-my-image` work.
 - [x] [#16](https://github.com/willj4945/whats_in_my_image/issues/16) A partial catalog match is shown under the wrong base image's name
 - [ ] [#17](https://github.com/willj4945/whats_in_my_image/issues/17) The scanner sidecar says the engine is "not responding" when the socket is permission denied
 - [ ] [#18](https://github.com/willj4945/whats_in_my_image/issues/18) An unreadable input file crashes with a traceback instead of a clean error
+
+**Pipeline gate**
+
+- [ ] [#12](https://github.com/willj4945/whats_in_my_image/issues/12) `--fail-on` policy with documented exit codes: 0 pass, 1 policy failed, 2 usage or load error, 3 unexpected
+      error. Fail closed when a rule needs data that's missing (for example, no scan ran). In review:
+      [#22](https://github.com/willj4945/whats_in_my_image/pull/22).
 
 **Distribution**
 
@@ -76,11 +82,9 @@ Fix the attribution bugs, and make `pipx install whats-in-my-image` work.
 
 ## v0.5.0: pipeline-ready
 
-Make `wimi` a gate in CI, not only a report.
+Make `wimi` easy to wire into CI and other tools.
 
-- [ ] [#12](https://github.com/willj4945/whats_in_my_image/issues/12) `--fail-on` policy with documented exit codes: 0 pass, 1 policy failed, 2 usage or load error, 3 unexpected
-      error. Fail closed when a rule needs data that's missing (for example, no scan ran).
-- [x] [#14](https://github.com/willj4945/whats_in_my_image/pull/14) Validate `--formats` without breaking the comma-list syntax (in review)
+- [x] [#14](https://github.com/willj4945/whats_in_my_image/pull/14) Validate `--formats` without breaking the comma-list syntax
 - [ ] SARIF output, so findings appear in GitHub code scanning and GitLab's security dashboard.
 - [ ] A versioned JSON schema for the report, published with the docs, so automation can depend on it.
 - [ ] A GitHub Action (`uses: willj4945/whats_in_my_image@v1`) and a GitLab CI/CD component.
