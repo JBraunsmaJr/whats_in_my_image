@@ -432,11 +432,12 @@ def _takeaways(m: dict) -> list[dict]:
     app = [o for o in origins if o["kind"] == "app"]
     if any(o["label"].lower().startswith("iron bank") for o in base):
         base_name = "Iron Bank"
-    elif len(base) == 1 and not base[0]["match"].startswith("estimated"):
+    elif len(base) == 1 and not base[0]["match"].startswith(("estimated", "partial")):
         base_name = base[0]["label"]
     else:
         base_name = "the base image"
     estimated = any(o["match"].startswith("estimated") for o in base)
+    partial = any(o["match"].startswith("partial") for o in base)
     total = len(comps)
     nb = sum(o["components"] for o in base)
     na = sum(o["components"] for o in app)
@@ -459,7 +460,8 @@ def _takeaways(m: dict) -> list[dict]:
                 "text": f"{base_name[0].upper() + base_name[1:]} supplied "
                 f"{_plural(nb, 'component')} ({_pct(nb, total)}) and the application build added "
                 f"{_plural(na, 'component')} ({_pct(na, total)}) of the {total:,} found in this image."
-                + (" (Base boundary is estimated.)" if estimated else ""),
+                + (" (Base boundary is estimated.)" if estimated else "")
+                + (" (The base is only partly identified; see the notes.)" if partial else ""),
             }
         )
 

@@ -18,6 +18,13 @@ All notable changes to this project are documented here. The format follows
 - The tools CI installs (Ruff, build, Bandit, zizmor) are hash-locked in `.github/requirements/` and kept current by
   Dependabot, so every tool a workflow downloads is verified by checksum.
 
+### Fixed
+
+- A catalogued image that shares only its first layers with the scanned image is no longer named as its base. The
+  origin is labelled "Base shared with ..." (they have a common ancestor, which proves nothing more), the bottom line
+  says "the base image" and that it is only partly identified, and the note explains what to catalogue for an exact
+  match. ([#16](https://github.com/willj4945/whats_in_my_image/issues/16))
+
 ## [0.3.0] - 2026-10-10
 
 Runs Trivy and Grype as sidecar containers, fixes attribution for layers that only change permissions, adds a
