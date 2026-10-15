@@ -21,6 +21,8 @@ Last reviewed: 2026-10-10.
 
 ## Shipped
 
+- **v0.3.1** (2026-10-14): container rebuilt on a UBI base that fixes seven high-severity vulnerabilities (OpenSSL, PCRE2),
+  and partial catalog matches are no longer named as the base ([#16](https://github.com/willj4945/whats_in_my_image/issues/16)).
 - **v0.3.0** (2026-10-10): scanner sidecars, the documentation site, the `wimi-docker` wrapper, the local testbed,
   attribution fix for layers that only change permissions ([#10](https://github.com/willj4945/whats_in_my_image/issues/10)),
   and validated `--formats` ([#14](https://github.com/willj4945/whats_in_my_image/pull/14)). See the
@@ -55,7 +57,7 @@ Fix the attribution bugs, and make `pipx install whats-in-my-image` work.
 - [x] [#10](https://github.com/willj4945/whats_in_my_image/issues/10) Layers that only change permissions or ownership take over attribution of unchanged files (`priority: high`)
 - [ ] [#11](https://github.com/willj4945/whats_in_my_image/issues/11) Vulnerability attribution: ties, ignored package type, loose version match
 - [ ] [#15](https://github.com/willj4945/whats_in_my_image/issues/15) Distroless images: `status.d` file lists aren't read, so every file is reported as unowned
-- [ ] [#16](https://github.com/willj4945/whats_in_my_image/issues/16) A partial catalog match is shown under the wrong base image's name
+- [x] [#16](https://github.com/willj4945/whats_in_my_image/issues/16) A partial catalog match is shown under the wrong base image's name
 - [ ] [#17](https://github.com/willj4945/whats_in_my_image/issues/17) The scanner sidecar says the engine is "not responding" when the socket is permission denied
 - [ ] [#18](https://github.com/willj4945/whats_in_my_image/issues/18) An unreadable input file crashes with a traceback instead of a clean error
 
