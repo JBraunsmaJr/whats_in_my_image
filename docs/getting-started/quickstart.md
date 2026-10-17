@@ -31,7 +31,7 @@ wimi registry.example.mil/team/api:2.4 \
 Pick one:
 
 ```bash
-wimi IMAGE --scan                      # runs Trivy or Grype if installed
+wimi IMAGE --scan                      # runs Trivy or Grype: installed, or as a sidecar container
 wimi IMAGE --vuln-report trivy.json    # imports a Trivy, Grype or Harbor JSON report
 wimi IMAGE --harbor-vulns              # reuses the scan a Harbor registry already ran
 ```

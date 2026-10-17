@@ -137,6 +137,6 @@ nav:
       - Roadmap: developer/roadmap.md
       - Local testbed: developer/testbed.md
       - Branch protection: developer/branch-protection.md
-      - Cutting a release: developer/releasing.md
+      - Releasing: developer/releasing.md
       - Security: developer/security.md
       - Changelog: developer/changelog.md

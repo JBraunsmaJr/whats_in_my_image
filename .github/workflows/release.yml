@@ -46,9 +46,9 @@ jobs:
             exit 1
           fi
       - run: python -m unittest discover -s tests
-      - run: python -m pip install build==1.6.1
+      - run: python -m pip install --require-hashes -r .github/requirements/build.txt
       - run: python -m build
-      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: dist
           path: dist/
@@ -58,6 +58,13 @@ jobs:
     name: Image, signatures, SBOMs, provenance, release
     needs: build
     runs-on: ubuntu-latest
+    # Filled in by the "Set release variables" step. Declared empty here so editors know they exist; a step that
+    # runs without them gets an empty value and fails, rather than a plausible but wrong default.
+    env:
+      VERSION: ""
+      IMAGE: ""
+      BASE_IMAGE: ""
+      WHEEL: ""
     permissions:
       contents: write # create the GitHub Release
       packages: write # push the image to GHCR
@@ -67,7 +74,7 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
-      - uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
         with:
           name: dist
           path: dist/
@@ -124,7 +131,7 @@ jobs:
         run: |
           mkdir -p release
           trivy image --format cyclonedx --output "release/wimi-${VERSION}-image.cdx.json" "${IMAGE}@${IMAGE_DIGEST}"
-          python -m pip install --quiet --no-index --target /tmp/sbom-root/lib/python3/site-packages dist/*.whl
+          python -m pip install --quiet --no-index --no-deps --target /tmp/sbom-root/lib/python3/site-packages dist/*.whl
           trivy rootfs --format cyclonedx --output "release/wimi-${VERSION}-python.cdx.json" /tmp/sbom-root
 
       - name: Build provenance for the Python package
@@ -153,7 +160,7 @@ jobs:
 
       - name: Provenance report of wimi's own image (dogfooding)
         run: |
-          python -m pip install --quiet --no-index dist/*.whl
+          python -m pip install --quiet --no-index --no-deps dist/*.whl
           wimi "docker:${IMAGE}:${VERSION}" \
             --base "Red Hat UBI 9 Python 3.12=${BASE_IMAGE}" \
             --app-name "wimi ${VERSION} release build" \

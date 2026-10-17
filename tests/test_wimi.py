@@ -233,6 +233,21 @@ class EndToEnd(unittest.TestCase):
         )
         self.assertTrue(any(f["title"] == "The base image is out of date" for f in m["findings"]))
 
+    def test_partial_catalog_match_is_not_named_as_the_base(self):
+        # Like aquasec/trivy against node:22-alpine: only the shared Alpine layer matches (#16).
+        base_layer = self.scan("--no-catalog")["layers"][0]["diff_id"]
+        cat = Catalog(self.catalog)
+        cat.add("reg.example/node:22-alpine", [base_layer, "sha256:" + "e" * 64], label="Node 22 Alpine")
+        cat.save()
+        m = self.scan()
+        base = next(o for o in m["origins"] if o["key"] == "base0")
+        self.assertEqual(base["label"], "Base shared with Node 22 Alpine")
+        self.assertEqual(base["match"], "partial layer-digest match")
+        supplied = next(t["text"] for t in m["takeaways"] if " supplied " in t["text"])
+        self.assertTrue(supplied.startswith("The base image supplied"), supplied)
+        self.assertIn("only partly identified", supplied)
+        self.assertTrue(any("so the image was not built on it" in n for n in m["notes"]))
+
     def test_no_catalog_flag_ignores_catalog(self):
         self.catalog_add(f"oci:{self.base}")
         m = self.scan("--no-catalog")

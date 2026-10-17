@@ -5,28 +5,35 @@ lint tools.
 
 ## Layout
 
-| Path                                            | Contents                                                                     |
-|-------------------------------------------------|------------------------------------------------------------------------------|
-| `whats_in_my_image/cli.py`                      | Command line, base resolution and output writing.                            |
-| `whats_in_my_image/sources.py`, `registry.py`   | Reading images from registries, archives, OCI layouts and local engines.     |
-| `whats_in_my_image/walker.py`                   | Walks the layers in build order and snapshots package databases at each one. |
-| `whats_in_my_image/parsers/`                    | RPM, Go build info and language ecosystem parsers.                           |
-| `whats_in_my_image/analyze.py`                  | Origins, component attribution, supplier evidence and findings.              |
-| `whats_in_my_image/catalog.py`                  | The base image catalog.                                                      |
-| `whats_in_my_image/vulns.py`                    | Scanner import and vulnerability attribution.                                |
-| `whats_in_my_image/report.py`, `html_report.py` | The report model, and the HTML renderer.                                     |
-| `tests/`                                        | Offline tests that build synthetic images.                                   |
-| `docs/`, `mkdocs.yml`                           | This documentation site.                                                     |
+| Path                                            | Contents                                                                                                  |
+|-------------------------------------------------|-----------------------------------------------------------------------------------------------------------|
+| `whats_in_my_image/cli.py`                      | Command line, base resolution and output writing.                                                         |
+| `whats_in_my_image/sources.py`, `registry.py`   | Reading images from registries, archives, OCI layouts and local engines.                                  |
+| `whats_in_my_image/walker.py`                   | Walks the layers in build order and snapshots package databases at each one.                              |
+| `whats_in_my_image/describe.py`                 | Build steps in plain English, and risky build practices.                                                  |
+| `whats_in_my_image/suppliers.py`                | Plain-language supplier names from package metadata.                                                      |
+| `whats_in_my_image/parsers/`                    | RPM, Go build info and language ecosystem parsers.                                                        |
+| `whats_in_my_image/analyze.py`                  | Origins, component attribution, supplier evidence and findings.                                           |
+| `whats_in_my_image/catalog.py`                  | The base image catalog.                                                                                   |
+| `whats_in_my_image/vulns.py`                    | Scanner import and vulnerability attribution.                                                             |
+| `whats_in_my_image/scanners.py`, `engine.py`    | Running Trivy or Grype as a binary or a sidecar container, and the Docker Engine API client.              |
+| `whats_in_my_image/report.py`, `html_report.py` | The report model, and the HTML renderer.                                                                  |
+| `tests/`                                        | Offline tests that build synthetic images.                                                                |
+| `testbed/`                                      | The [local testbed](testbed.md) for trying changes against real images.                                   |
+| `contrib/`                                      | The `wimi-docker` wrapper.                                                                                |
+| `.github/`                                      | Workflows, rulesets, Dependabot, and the hash-locked tool versions CI installs (`.github/requirements/`). |
+| `docs/`, `mkdocs.yml`                           | This documentation site.                                                                                  |
 
 ## Checks
 
 ```bash
 python3 -m unittest discover -s tests     # offline tests with synthetic images
-ruff check . && ruff format --check .     # lint and formatting (ruff 0.16)
+ruff check . && ruff format --check .     # lint and formatting
 bandit -c pyproject.toml -r whats_in_my_image
 ```
 
-GitHub Actions runs these on every push and pull request, along with tests on Python 3.9 to 3.14, CodeQL, Trivy,
+CI installs the exact tool versions in `.github/requirements/` (hash-locked); install from there to match it. GitHub
+Actions runs these on every push and pull request, along with tests on Python 3.9 to 3.14, CodeQL, Trivy,
 Gitleaks, workflow security checks and OpenSSF Scorecard. Findings appear under the repository's
 **Security → Code scanning** tab.
 
