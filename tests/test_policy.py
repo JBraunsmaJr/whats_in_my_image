@@ -127,6 +127,14 @@ class VulnerabilityRules(unittest.TestCase):
             self.assertIn("could not be identified", r["missing"])
         self.assertTrue(check(m, "any:high")["passed"])  # needs no attribution
 
+    def test_estimated_attribution_fails_app_and_base_rules(self):
+        m = model([], origins=[{"key": "base0", "kind": "base", "match": "estimated from build timestamps"}])
+        for rule in ("app:high", "base:high"):
+            r = check(m, rule)
+            self.assertFalse(r["passed"], rule)
+            self.assertIn("boundary is estimated", r["missing"])
+        self.assertTrue(check(m, "any:high")["passed"])
+
 
 class OtherRules(unittest.TestCase):
     COMPONENTS = [

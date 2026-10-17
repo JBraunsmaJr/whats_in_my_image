@@ -98,6 +98,10 @@ def _attributed(model: dict) -> bool:
     return any(o["kind"] in ("base", "app") for o in model["origins"])
 
 
+def _is_estimated(model: dict) -> bool:
+    return any(o.get("match") == "estimated from build timestamps" for o in model["origins"])
+
+
 def _vuln_rule(model, scope, sev, fixable, scan_requested):
     vulns = model.get("vulns")
     if vulns is None:
@@ -109,6 +113,8 @@ def _vuln_rule(model, scope, sev, fixable, scan_requested):
         return 0, [], why
     if scope != "any" and not _attributed(model):
         return 0, [], "the base image could not be identified, so vulnerabilities could not be attributed"
+    if scope != "any" and _is_estimated(model):
+        return 0, [], "the base/application boundary is estimated; add --base or catalog the base"
     keys = {o["key"] for o in model["origins"] if o["kind"] == scope} if scope != "any" else None
     wanted = {s.upper() for s in SEVERITIES[: SEVERITIES.index(sev) + 1]}
     hits = [
