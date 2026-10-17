@@ -14,7 +14,7 @@ services:
     # Tested on Linux (Ubuntu 24.04). On Docker Desktop for Mac/Windows, you might need user: "0:0"
     # and DOCKER_GID=0.
     user: ${WIMI_UID:-1000}:${WIMI_GID:-1000}
-    group_add: ["${DOCKER_GID:-0}"]
+    group_add: ["${DOCKER_GID:?set DOCKER_GID, e.g. export DOCKER_GID=$(stat -c %g /var/run/docker.sock)}"]
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock
       - ${PWD:-.}:/work
