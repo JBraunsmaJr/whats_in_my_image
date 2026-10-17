@@ -63,7 +63,7 @@ executive (CISO/CIO) can read in two minutes and an engineer can act on.
 
 ```bash
 # Install the wheel from the Releases page (or use the container image below)
-pip install whats_in_my_image-0.3.0-py3-none-any.whl
+pip install whats_in_my_image-0.3.1-py3-none-any.whl
 
 # Scan any image in any registry
 wimi registry.example.mil/team/api:2.4
@@ -97,7 +97,7 @@ The full documentation is at **[willj4945.github.io/whats_in_my_image](https://w
 | [CI/CD](https://willj4945.github.io/whats_in_my_image/ci/) | GitLab CI and GitHub Actions examples |
 | [Concepts](https://willj4945.github.io/whats_in_my_image/concepts/) | How attribution works, what is supported, limitations |
 | [Reference](https://willj4945.github.io/whats_in_my_image/reference/) | Every command and option, environment variables |
-| [Developer guide](https://willj4945.github.io/whats_in_my_image/developer/) | Development, branch protection, releases |
+| [Developer guide](https://willj4945.github.io/whats_in_my_image/developer/) | Development, the local testbed, branch protection, releases, roadmap |
 
 ## Contributing
 

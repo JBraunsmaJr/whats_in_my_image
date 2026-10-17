@@ -1,0 +1,126 @@
+name: Base image check
+
+# Dependabot cannot update the base image pin: it is the default of `ARG BASE_IMAGE` in the Dockerfile, which
+# Dependabot does not read. Once a week this compares the pinned digest with the registry's `latest` tag. When a
+# newer build is out, it opens (or updates) an issue with the fixable critical and high vulnerabilities in each, so
+# the maintainers can decide whether a patch release is due (docs/developer/releasing.md, "When to release").
+
+on:
+  schedule:
+    - cron: "17 6 * * 1" # Mondays 06:17 UTC
+  workflow_dispatch:
+
+permissions: {}
+
+concurrency:
+  group: base-image
+  cancel-in-progress: true
+
+env:
+  TRIVY_VERSION: "0.75.0"
+  TRIVY_SHA256: "c6e65abddb348e25f10549df887045629cf28cc72453cd1c63acb717316b3f3f"
+
+jobs:
+  check:
+    name: Compare pinned base with latest
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read # read the Dockerfile
+      issues: write # open or update the base image issue
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Resolve pinned and latest digests
+        id: digests
+        run: |
+          pinned=$(sed -n 's/^ARG BASE_IMAGE=//p' Dockerfile)
+          repo="${pinned%@*}"
+          registry="${repo%%/*}"
+          path="${repo#*/}"
+          latest=$(curl -sSfI \
+            -H "Accept: application/vnd.oci.image.index.v1+json, application/vnd.docker.distribution.manifest.list.v2+json" \
+            "https://${registry}/v2/${path}/manifests/latest" \
+            | tr -d '\r' | awk -F': ' 'tolower($1) == "docker-content-digest" {print $2}')
+          if [ -z "$latest" ]; then
+            echo "::error::could not resolve ${repo}:latest"
+            exit 1
+          fi
+          echo "pinned: ${pinned}"
+          echo "latest: ${repo}@${latest}"
+          {
+            echo "repo=${repo}"
+            echo "pinned=${pinned#*@}"
+            echo "latest=${latest}"
+            echo "changed=$([ "${pinned#*@}" = "$latest" ] && echo false || echo true)"
+          } >> "$GITHUB_OUTPUT"
+
+      - name: Install Trivy (checksum verified)
+        if: steps.digests.outputs.changed == 'true'
+        run: |
+          curl -sSfL -o trivy.tgz "https://github.com/aquasecurity/trivy/releases/download/v${TRIVY_VERSION}/trivy_${TRIVY_VERSION}_Linux-64bit.tar.gz"
+          echo "${TRIVY_SHA256}  trivy.tgz" | sha256sum --check --strict
+          tar -xzf trivy.tgz trivy && sudo mv trivy /usr/local/bin/ && rm trivy.tgz
+
+      - name: Count fixable critical and high vulnerabilities
+        if: steps.digests.outputs.changed == 'true'
+        env:
+          REPO: ${{ steps.digests.outputs.repo }}
+          PINNED: ${{ steps.digests.outputs.pinned }}
+          LATEST: ${{ steps.digests.outputs.latest }}
+        run: |
+          count() { # image, severity -> number of distinct (vulnerability, package) pairs with a fix available
+            jq --arg sev "$2" '[.Results[]?.Vulnerabilities[]? | select(.Severity == $sev)
+              | "\(.VulnerabilityID) \(.PkgName)"] | unique | length' "$1"
+          }
+          trivy image --quiet --image-src remote --severity CRITICAL,HIGH --ignore-unfixed --format json \
+            --output pinned.json "${REPO}@${PINNED}"
+          trivy image --quiet --image-src remote --severity CRITICAL,HIGH --ignore-unfixed --format json \
+            --output latest.json "${REPO}@${LATEST}"
+          for f in pinned latest; do
+            jq -r '.Results[]?.Vulnerabilities[]? | "\(.VulnerabilityID) \(.PkgName) (\(.Severity))"' "$f.json" \
+              | sort -u > "$f.txt"
+          done
+          fixed=$(comm -23 pinned.txt latest.txt) # in the pinned build, gone from the new one
+          {
+            echo "A newer build of the \`wimi\` container's base image is available."
+            echo
+            echo "| | Digest | Fixable critical | Fixable high |"
+            echo "|---|---|---|---|"
+            echo "| Pinned in \`Dockerfile\` | \`${PINNED}\` | $(count pinned.json CRITICAL) | $(count pinned.json HIGH) |"
+            echo "| \`${REPO}:latest\` | \`${LATEST}\` | $(count latest.json CRITICAL) | $(count latest.json HIGH) |"
+            echo
+            if [ -n "$fixed" ]; then
+              echo "Fixed by moving to the new build:"
+              echo
+              echo '```text'
+              echo "$fixed"
+              echo '```'
+            else
+              echo "The new build fixes no critical or high vulnerabilities."
+            fi
+            echo
+            echo "**Next step:** see [When to release](https://willj4945.github.io/whats_in_my_image/developer/releasing/#when-to-release)."
+            echo "A fixed critical, or a fixed high in Python, OpenSSL or glibc, is worth a patch release. Otherwise bump"
+            echo "the \`ARG BASE_IMAGE\` digest in the next release."
+            echo
+            echo "_Opened by the [Base image check](${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}/actions/runs/${GITHUB_RUN_ID}) workflow, which updates this issue each week until the pin changes._"
+          } > body.md
+          cat body.md >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Open or update the issue
+        if: steps.digests.outputs.changed == 'true'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh label create base-image --color 0E8A16 \
+            --description "A newer build of the container's base image is available" --force
+          issue=$(gh issue list --label base-image --state open --json number --jq '.[0].number // empty')
+          if [ -n "$issue" ]; then
+            gh issue edit "$issue" --body-file body.md
+            echo "updated #${issue}"
+          else
+            gh issue create --title "New base image build available for the wimi container" \
+              --label base-image --body-file body.md
+          fi

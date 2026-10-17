@@ -103,10 +103,14 @@ def compute_origins(
             )
             continue
         if prefix < len(b["diff_ids"]):
+            # Shared leading layers prove a common ancestor, not that the image was built on this base: it may be
+            # another release of it, or the image the base is itself built on (alpine under node:alpine).
             b["partial"] = True
+            b["label"] = f"Base shared with {b['label']}"
             notes.append(
-                f"Only the first {prefix} of {len(b['diff_ids'])} layers of {b['ref']} match. The image was "
-                "built from a different version (tag) of this base that shares older layers with it."
+                f"Only the first {prefix} of {len(b['diff_ids'])} layers of {b['ref']} match, so the image was "
+                "not built on it. Both share an older base: either another release of this image, or the image "
+                "it is itself built on. Catalogue that base (`wimi catalog add`) or use --base for an exact match."
             )
         matched.append(b)
     matched.sort(key=lambda b: b["prefix"])
